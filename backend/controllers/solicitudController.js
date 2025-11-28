@@ -1,4 +1,4 @@
-import {Solicitud, Usuario, Suministro} from '../models/Index.js';
+import {Solicitud, Usuario, Suministro, SuministroParcial} from '../models/Index.js';
 import path from 'path';
 import db from '../config/db.js';
 
@@ -251,7 +251,13 @@ export const eliminarSolicitud = async (req, res) => {
             return res.status(404).json({ msg: 'Solicitud no encontrada' });
         }
 
+        // PRIMERO: Eliminar suministros parciales
+        await SuministroParcial.destroy({ where: { SolicitudId: solicitud.id }, transaction: t });
+        
+        // SEGUNDO: Eliminar suministros
         await Suministro.destroy({ where: { SolicitudId: solicitud.id }, transaction: t });
+        
+        // TERCERO: Eliminar solicitud
         await solicitud.destroy({ transaction: t });
 
         await t.commit();
@@ -273,7 +279,7 @@ export const cambiarStatusSolicitud = async (req, res) => {
         const { id } = req.params;
         const { status, comentarioAdmin } = req.body;
 
-        const statusValidos = ['pendiente autorizacion', 'autorizada', 'rechazada', 'entrega parcial', 'surtido'];
+        const statusValidos = ['pendiente surtido', 'en proceso', 'rechazada', 'entrega parcial', 'surtido'];
         if(!statusValidos.includes(status)){
             return res.status(400).json({ msg: 'Status invalido'})
         }

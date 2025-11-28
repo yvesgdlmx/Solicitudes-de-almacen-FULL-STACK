@@ -28,9 +28,15 @@ const Solicitud = db.define('solicitudes', {
         defaultValue: 'moderado'
     },
     status: {
-        type: DataTypes.ENUM('pendiente autorizacion','autorizada','rechazada','entrega parcial','surtido'),
+        type: DataTypes.ENUM(
+            'pendiente surtido',
+            'en proceso',
+            'rechazada',
+            'entrega parcial',
+            'surtido'
+        ),
         allowNull: false,
-        defaultValue: 'pendiente autorizacion'
+        defaultValue: 'pendiente surtido'
     },
     comentarioUser: {
         type: DataTypes.TEXT,

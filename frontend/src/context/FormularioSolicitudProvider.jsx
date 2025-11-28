@@ -59,9 +59,6 @@ const FormularioSolicitudProvider = ({ children }) => {
 
     const validarFormulario = () => {
         const nuevosErrores = {}
-        if (!formulario.comentario.trim()) {
-            nuevosErrores.comentario = 'El comentario es requerido';
-        }
         formulario.productos.forEach((producto, indice) => {
             if(!producto.producto.trim()) {
                 nuevosErrores[`producto_${indice}`] = 'El nombre del producto es obligatorio.'

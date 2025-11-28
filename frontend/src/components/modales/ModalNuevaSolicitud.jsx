@@ -3,10 +3,9 @@ import Modal from "react-modal";
 import FormularioProductos from "../formularios/FormularioProductos";
 import useFormularioSolicitud from "../../hooks/useFormularioSolicitud";
 
-// Configurar el elemento raíz para el modal
 Modal.setAppElement('#root');
 
-const ModalNuevaSolicitud = ({ onGuardar, cargando = false }) => {
+const ModalNuevaSolicitud = ({ onGuardar, cargando = false, unidadesDisponibles = [] }) => {
     const {
         formulario,
         errores,
@@ -30,7 +29,6 @@ const ModalNuevaSolicitud = ({ onGuardar, cargando = false }) => {
         <Modal
             isOpen={isOpen}
             onRequestClose={cerrarModal}
-            // CAMBIAR A ESTE ESTILO (igual que el otro modal):
             className="w-[95vw] max-w-[800px] mx-auto mt-8 bg-white rounded-xl shadow-2xl outline-none max-h-[90vh] overflow-auto"
             overlayClassName="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center p-4 z-50"
             contentLabel={esEdicion ? "Editar Solicitud" : "Nueva Solicitud"}
@@ -100,7 +98,10 @@ const ModalNuevaSolicitud = ({ onGuardar, cargando = false }) => {
                         {errores.comentario && <p className="text-red-500 text-xs mt-1">{errores.comentario}</p>}
                     </div>
 
-                    <FormularioProductos cargando={cargando} />
+                    <FormularioProductos 
+                        cargando={cargando} 
+                        unidadesDisponibles={unidadesDisponibles}
+                    />
 
                     <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
                         <button

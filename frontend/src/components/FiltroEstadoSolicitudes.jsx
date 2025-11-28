@@ -10,49 +10,49 @@ const FiltroEstadoSolicitudes = ({
 
   // Estados disponibles con sus colores más discretos
   const estados = [
-    { 
-      nombre: "Todos", 
-      colorIndicador: "bg-gray-400", 
-      colorTexto: "text-gray-700",
-      colorFondo: "bg-gray-50",
-      colorBorde: "border-gray-200"
-    },
-    { 
-      nombre: "pendiente autorizacion", 
-      colorIndicador: "bg-blue-500", 
-      colorTexto: "text-blue-700",
-      colorFondo: "bg-blue-50",
-      colorBorde: "border-blue-200"
-    },
-    {
-      nombre: 'autorizada',
-      colorIndicador: 'bg-purple-500',
-      colorTexto: 'text-purple-700',
-      colorFondo: 'bg-purple-50',
-      colorBorde: 'border-purple-200'
-    },
-    { 
-      nombre: "rechazada", 
-      colorIndicador: "bg-red-500", 
-      colorTexto: "text-red-700",
-      colorFondo: "bg-red-50",
-      colorBorde: "border-red-200"
-    },
-    { 
-      nombre: "entrega parcial", 
-      colorIndicador: "bg-amber-500", 
-      colorTexto: "text-amber-700",
-      colorFondo: "bg-amber-50",
-      colorBorde: "border-amber-200"
-    },
-    { 
-      nombre: "surtido", 
-      colorIndicador: "bg-green-500", 
-      colorTexto: "text-green-700",
-      colorFondo: "bg-green-50",
-      colorBorde: "border-green-200"
-    },
-  ];
+  { 
+    nombre: "Todos", 
+    colorIndicador: "bg-gray-400", 
+    colorTexto: "text-gray-700",
+    colorFondo: "bg-gray-50",
+    colorBorde: "border-gray-200"
+  },
+  { 
+    nombre: "pendiente surtido", 
+    colorIndicador: "bg-blue-500", 
+    colorTexto: "text-blue-700",
+    colorFondo: "bg-blue-50",
+    colorBorde: "border-blue-200"
+  },
+  {
+    nombre: 'en proceso',
+    colorIndicador: 'bg-purple-500',
+    colorTexto: 'text-purple-700',
+    colorFondo: 'bg-purple-50',
+    colorBorde: 'border-purple-200'
+  },
+  { 
+    nombre: "rechazada", 
+    colorIndicador: "bg-red-500", 
+    colorTexto: "text-red-700",
+    colorFondo: "bg-red-50",
+    colorBorde: "border-red-200"
+  },
+  { 
+    nombre: "entrega parcial", 
+    colorIndicador: "bg-amber-500", 
+    colorTexto: "text-amber-700",
+    colorFondo: "bg-amber-50",
+    colorBorde: "border-amber-200"
+  },
+  { 
+    nombre: "surtido", 
+    colorIndicador: "bg-green-500", 
+    colorTexto: "text-green-700",
+    colorFondo: "bg-green-50",
+    colorBorde: "border-green-200"
+  },
+];
 
   // Contar solicitudes por estado
   const contarPorEstado = (estado) => {

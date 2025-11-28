@@ -6,6 +6,8 @@ import { UsuariosProvider } from "./context/UsuariosProvider";
 import { DashboardProvider } from "./context/DashboardProvider";
 import { FormularioSolicitudProvider } from "./context/FormularioSolicitudProvider";
 import { ProductoProvider } from "./context/ProductoProvider";
+import { UnidadMedidaProvider } from "./context/UnidadMedidaProvider";
+import { SuministroParcialProvider } from "./context/SuministroParcialProvider";
 
 const AuthLayout = lazy(() => import("./layouts/AuthLayout"));
 const Login = lazy(() => import("./paginas/Login"));
@@ -28,62 +30,70 @@ function App() {
             <DashboardProvider>
               <FormularioSolicitudProvider>
                 <ProductoProvider>
-                  <Suspense fallback={<div>Cargando...</div>}>
-                    <Routes>
-                      <Route path="/" element={<AuthLayout />}>
-                        <Route index element={<Login />} />
-                      </Route>
+                  <UnidadMedidaProvider>
+                    <SuministroParcialProvider>
+                      <Suspense fallback={<div>Cargando...</div>}>
+                        <Routes>
+                          <Route path="/" element={<AuthLayout />}>
+                            <Route index element={<Login />} />
+                          </Route>
 
-                      <Route element={<LayoutProtegido />}>
-                        <Route
-                          path="/solicitudes"
-                          element={
-                            <RoleProtectedRoute
-                              allowedRoles={["admin", "superadmin", "user"]}
-                            >
-                              <MisSolicitudes />
-                            </RoleProtectedRoute>
-                          }
-                        />
-                        <Route
-                          path="/todas-solicitudes"
-                          element={
-                            <RoleProtectedRoute
-                              allowedRoles={["admin", "superadmin"]}
-                            >
-                              <TodasSolicitudes />
-                            </RoleProtectedRoute>
-                          }
-                        />
-                        <Route
-                          path="/dashboard"
-                          element={
-                            <RoleProtectedRoute
-                              allowedRoles={["admin", "user", "superadmin"]}
-                            >
-                              <Dashboard />
-                            </RoleProtectedRoute>
-                          }
-                        />
-                        <Route
-                          path="/cuentas-usuario"
-                          element={
-                            <RoleProtectedRoute allowedRoles={["superadmin"]}>
-                              <CuentasDeUsuario />
-                            </RoleProtectedRoute>
-                          }
-                        />
-                        <Route
-                          path="/productos"
-                          element={
-                            <RoleProtectedRoute allowedRoles={["superadmin"]}>
-                              <Productos />
-                            </RoleProtectedRoute>
-                          }
-                        />
-                      </Route>
-                    </Routes>
-                  </Suspense>
+                          <Route element={<LayoutProtegido />}>
+                            <Route
+                              path="/solicitudes"
+                              element={
+                                <RoleProtectedRoute
+                                  allowedRoles={["admin", "superadmin", "user"]}
+                                >
+                                  <MisSolicitudes />
+                                </RoleProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/todas-solicitudes"
+                              element={
+                                <RoleProtectedRoute
+                                  allowedRoles={["admin", "superadmin"]}
+                                >
+                                  <TodasSolicitudes />
+                                </RoleProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/dashboard"
+                              element={
+                                <RoleProtectedRoute
+                                  allowedRoles={["admin", "user", "superadmin"]}
+                                >
+                                  <Dashboard />
+                                </RoleProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/cuentas-usuario"
+                              element={
+                                <RoleProtectedRoute
+                                  allowedRoles={["superadmin"]}
+                                >
+                                  <CuentasDeUsuario />
+                                </RoleProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/productos"
+                              element={
+                                <RoleProtectedRoute
+                                  allowedRoles={["superadmin"]}
+                                >
+                                  <Productos />
+                                </RoleProtectedRoute>
+                              }
+                            />
+                          </Route>
+                        </Routes>
+                      </Suspense>
+                    </SuministroParcialProvider>
+                  </UnidadMedidaProvider>
                 </ProductoProvider>
               </FormularioSolicitudProvider>
             </DashboardProvider>

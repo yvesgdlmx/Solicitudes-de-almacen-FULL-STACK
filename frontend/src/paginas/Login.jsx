@@ -158,11 +158,6 @@ const Login = () => {
                 className="w-full rounded-xl shadow-2xl border-2 border-white/50 bg-white/95 backdrop-blur-sm"
               />
             </div>
-            
-            {/* Elemento circular flotante */}
-            <div className="absolute top-4 -right-12 w-16 h-16 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-full flex items-center justify-center transform -rotate-12 hover:rotate-0 transition-transform duration-300 animate-bounce">
-              <span className="text-white font-bold text-xs">LIVE</span>
-            </div>
           </div>
         </div>
       </div>

@@ -1,11 +1,11 @@
 import React, { useEffect } from 'react';
 import Select from 'react-select';
-import { unidadesDisponibles } from "../../data/Index";
 import useFormularioSolicitud from '../../hooks/useFormularioSolicitud';
 import useProducto from '../../hooks/useProducto';
+import useDashboard from '../../hooks/useDashboard';
 import { useSelectStyles } from '../../hooks/useSelectStyles';
 
-const FormularioProductos = ({ cargando }) => {
+const FormularioProductos = ({ cargando, unidadesDisponibles = [] }) => {
     const {
         formulario,
         errores,
@@ -20,6 +20,8 @@ const FormularioProductos = ({ cargando }) => {
         cargandoDatos: cargandoProductos
     } = useProducto();
 
+    const { dataDashboard } = useDashboard();
+
     const { estilosSelect, estilosSelectError } = useSelectStyles();
 
     // Cargar productos al montar el componente
@@ -29,34 +31,77 @@ const FormularioProductos = ({ cargando }) => {
         }
     }, []);
 
-    // Convertir productos del contexto a formato para react-select
-    const opcionesProductos = productos.map(producto => ({
-        value: producto.nombre,
-        label: producto.nombre,
-        unidad: producto.unidad,
-        id: producto.id
-    }));
+    // Ordenar productos: primero los más solicitados por el usuario, luego alfabéticamente
+    const obtenerProductosOrdenados = () => {
+        const productosMasSolicitados = dataDashboard?.productosMasSolicitados || [];
+        
+        // Crear un mapa de nombres de productos más solicitados con su índice
+        const mapaProductosSolicitados = new Map(
+            productosMasSolicitados.map((p, index) => [p.nombre.toLowerCase(), index])
+        );
 
-    // Convertir unidades a formato para react-select (mantener las de data + las de productos del contexto)
-    const unidadesDeProductos = [...new Set(productos.map(p => p.unidad))];
-    const todasLasUnidades = [...new Set([...unidadesDeProductos, ...unidadesDisponibles])];
-    const opcionesUnidades = todasLasUnidades.map(unidad => ({
-        value: unidad,
-        label: unidad
-    }));
+        // Ordenar productos
+        const productosOrdenados = [...productos].sort((a, b) => {
+            const nombreA = a.nombre.toLowerCase();
+            const nombreB = b.nombre.toLowerCase();
+            
+            const indexA = mapaProductosSolicitados.has(nombreA) 
+                ? mapaProductosSolicitados.get(nombreA) 
+                : Infinity;
+            const indexB = mapaProductosSolicitados.has(nombreB) 
+                ? mapaProductosSolicitados.get(nombreB) 
+                : Infinity;
+
+            // Si ambos están en los más solicitados, ordenar por índice
+            if (indexA !== Infinity && indexB !== Infinity) {
+                return indexA - indexB;
+            }
+            
+            // Si solo uno está en los más solicitados, ese va primero
+            if (indexA !== Infinity) return -1;
+            if (indexB !== Infinity) return 1;
+            
+            // Si ninguno está en los más solicitados, ordenar alfabéticamente
+            return a.nombre.localeCompare(b.nombre);
+        });
+
+        return productosOrdenados;
+    };
+
+    // Convertir productos ordenados a formato para react-select
+    const opcionesProductos = obtenerProductosOrdenados().map((producto, index) => {
+        const esMasSolicitado = dataDashboard?.productosMasSolicitados?.some(
+            p => p.nombre.toLowerCase() === producto.nombre.toLowerCase()
+        );
+
+        return {
+            value: producto.nombre,
+            label: producto.nombre,
+            unidad: producto.unidad,
+            id: producto.id,
+            esMasSolicitado,
+            orden: index
+        };
+    });
+
+    // Convertir unidades de la base de datos a formato para react-select
+    const opcionesUnidades = unidadesDisponibles
+        .sort((a, b) => a.id - b.id)
+        .map(unidad => ({
+            value: unidad.nombre,
+            label: unidad.nombre,
+            id: unidad.id
+        }));
 
     // Función para manejar el cambio de producto y auto-completar la unidad
     const handleProductoSeleccionado = (indice, opcionSeleccionada) => {
         const nombreProducto = opcionSeleccionada?.value || '';
         
-        // Actualizar el nombre del producto
         handleProductoChange(indice, 'producto', nombreProducto);
         
-        // Si se seleccionó un producto, auto-completar la unidad
         if (opcionSeleccionada && opcionSeleccionada.unidad) {
             handleProductoChange(indice, 'unidad', opcionSeleccionada.unidad);
         } else if (!opcionSeleccionada) {
-            // Si se limpió la selección, también limpiar la unidad
             handleProductoChange(indice, 'unidad', '');
         }
     };
@@ -67,6 +112,25 @@ const FormularioProductos = ({ cargando }) => {
         const busqueda = inputValue.toLowerCase();
         return valor.includes(busqueda);
     };
+
+    // Componente personalizado para las opciones del select
+    const formatearOpcion = (opcion, { context }) => (
+        <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2 flex-1 truncate">
+                {opcion.esMasSolicitado && (
+                    <span className="text-yellow-500 flex-shrink-0" title="Producto más solicitado por ti">
+                        ⭐
+                    </span>
+                )}
+                <span className="truncate">{opcion.label}</span>
+            </div>
+            {context === 'menu' && (
+                <span className="text-xs text-gray-500 ml-2 flex-shrink-0">
+                    {opcion.unidad}
+                </span>
+            )}
+        </div>
+    );
 
     return (
         <div>
@@ -104,7 +168,10 @@ const FormularioProductos = ({ cargando }) => {
                                     value={producto.producto ? { 
                                         value: producto.producto, 
                                         label: producto.producto,
-                                        unidad: productos.find(p => p.nombre === producto.producto)?.unidad
+                                        unidad: productos.find(p => p.nombre === producto.producto)?.unidad,
+                                        esMasSolicitado: dataDashboard?.productosMasSolicitados?.some(
+                                            p => p.nombre.toLowerCase() === producto.producto.toLowerCase()
+                                        )
                                     } : null}
                                     onChange={(opcionSeleccionada) => handleProductoSeleccionado(indice, opcionSeleccionada)}
                                     options={opcionesProductos}
@@ -118,16 +185,7 @@ const FormularioProductos = ({ cargando }) => {
                                     filterOption={filtrarOpciones}
                                     menuPortalTarget={document.body}
                                     menuPosition="fixed"
-                                    formatOptionLabel={(opcion, { context }) => (
-                                        <div className="flex justify-between items-center">
-                                            <span className="truncate">{opcion.label}</span>
-                                            {context === 'menu' && (
-                                                <span className="text-xs text-gray-500 ml-2 flex-shrink-0">
-                                                    {opcion.unidad}
-                                                </span>
-                                            )}
-                                        </div>
-                                    )}
+                                    formatOptionLabel={formatearOpcion}
                                 />
                                 {errores[`producto_${indice}`] && (
                                     <p className="text-red-500 text-xs mt-1">{errores[`producto_${indice}`]}</p>
@@ -162,7 +220,7 @@ const FormularioProductos = ({ cargando }) => {
                                         isClearable={true}
                                         isDisabled={cargando}
                                         styles={errores[`unidad_${indice}`] ? estilosSelectError : estilosSelect}
-                                        noOptionsMessage={() => "No se encontraron unidades"}
+                                        noOptionsMessage={() => unidadesDisponibles.length === 0 ? "No hay unidades disponibles" : "No se encontraron unidades"}
                                         menuPortalTarget={document.body}
                                         menuPosition="fixed"
                                     />
@@ -191,9 +249,23 @@ const FormularioProductos = ({ cargando }) => {
             </div>
 
             {/* Información adicional */}
-            {productos.length > 0 && (
-                <div className="mt-2 text-xs text-gray-500">
-                    💡 Tip: Al seleccionar un producto, la unidad se completará automáticamente, pero puedes cambiarla si necesitas otra unidad.
+            {productos.length > 0 && unidadesDisponibles.length > 0 && (
+                <div className="mt-2 space-y-1">
+                    <div className="text-xs text-gray-500">
+                        💡 Tip: Al seleccionar un producto, la unidad se completará automáticamente.
+                    </div>
+                    {dataDashboard?.productosMasSolicitados && dataDashboard.productosMasSolicitados.length > 0 && (
+                        <div className="text-xs text-yellow-700 flex items-center gap-1">
+                            <span>⭐</span>
+                            <span>Los productos marcados con estrella son tus más solicitados y aparecen primero.</span>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {unidadesDisponibles.length === 0 && (
+                <div className="mt-2 text-xs text-amber-600">
+                    ⚠️ No hay unidades de medida registradas. Por favor, registra unidades primero.
                 </div>
             )}
         </div>

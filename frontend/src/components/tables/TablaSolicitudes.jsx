@@ -10,7 +10,7 @@ const TablaSolicitudes = ({ datos = [], titulo = "", onCrearSolicitud, showAccio
 
   // Función para verificar si se puede editar/eliminar
   const puedeEditarEliminar = (status) => {
-    return status === "pendiente autorizacion";
+    return status === "pendiente surtido";
   };
 
   // Función para mostrar alerta cuando no se puede editar
@@ -170,9 +170,9 @@ const TablaSolicitudes = ({ datos = [], titulo = "", onCrearSolicitud, showAccio
                     <td className="py-3 px-4">
                       <span
                         className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                          elemento.status === "pendiente autorizacion"
+                          elemento.status === "pendiente surtido"
                             ? "bg-blue-100 text-blue-700"
-                            : elemento.status === "autorizada"
+                            : elemento.status === "en proceso"
                             ? "bg-purple-100 text-purple-700"
                             : elemento.status === "rechazada"
                             ? "bg-red-100 text-red-700"

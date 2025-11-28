@@ -20,9 +20,9 @@ const LeyendaHorarios = () => {
       icon: <FaSun className="text-orange-500" />,
       color: "bg-orange-50 border-orange-200",
       rangos: [
-        "14:30 - 15:00",
-        "17:00 - 17:30",
-        "19:30 - 20:00"
+        "15:00 - 15:30",
+        "17:30 - 18:00",
+        "20:00 - 20:30"
       ]
     },
     {

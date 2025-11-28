@@ -1,10 +1,12 @@
 import React, {useState, useEffect} from "react";
 import Modal from "react-modal";
 import { formatearTextoEstado, formatearFecha } from "../../functions/Index";
-import { FaTimes, FaFileAlt, FaUser, FaExclamationTriangle, FaList, FaComment, FaSave, FaCalendarAlt, FaClock, FaUserShield, FaFilePdf } from "react-icons/fa";
+import { FaTimes, FaFileAlt, FaUser, FaExclamationTriangle, FaList, FaComment, FaSave, FaCalendarAlt, FaClock, FaUserShield, FaFilePdf, FaBoxOpen, FaCheckCircle } from "react-icons/fa";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import SolicitudPDF from "../herramientasPDF/SolicitudPDF";
 import useSolicitud from "../../hooks/useSolicitud";
+import useSuministroParcial from "../../hooks/useSuministroParcial";
+import useUnidadMedida from "../../hooks/useUnidadMedida";
 import useAuth from "../../hooks/useAuth";
 
 const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) => {
@@ -12,7 +14,11 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
   const [comentarioAdmin, setComentarioAdmin] = useState('');
   const [comentarioInicialAdmin, setComentarioInicialAdmin] = useState('');
   const [cambiandoStatus, setCambiandoStatus] = useState(false);
+  const [suministrosParciales, setSuministrosParciales] = useState([]);
+  
   const { cambiarStatusSolicitud } = useSolicitud();
+  const { registrarSuministrosParciales, obtenerSuministrosParciales, suministrosParciales: suministrosParcialesContext } = useSuministroParcial();
+  const { unidades } = useUnidadMedida();
   const { auth } = useAuth();
 
   useEffect(() => {
@@ -22,13 +28,32 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
         const statusNormalizado = solicitud.status.trim().toLowerCase();
         setStatusSeleccionado(statusNormalizado);
       } else {
-        setStatusSeleccionado('pendiente autorizacion');
+        setStatusSeleccionado('pendiente surtido');
       }
       
-      // Comentario admin - almacenar tanto el valor inicial como el actual
+      // Comentario admin
       const comentarioInicial = solicitud.comentarioAdmin || '';
       setComentarioAdmin(comentarioInicial);
       setComentarioInicialAdmin(comentarioInicial);
+
+      // Inicializar suministros parciales
+      if (solicitud.suministros) {
+        setSuministrosParciales(
+          solicitud.suministros.map(s => ({
+            seleccionado: false,
+            nombre: s.nombre,
+            unidad: s.unidad,
+            cantidadSolicitada: s.cantidad,
+            cantidadEntregada: s.cantidad,
+            unidadEntregada: s.unidad
+          }))
+        );
+      }
+
+      // Obtener suministros parciales si existen
+      if (solicitud.id) {
+        obtenerSuministrosParciales(solicitud.id);
+      }
     }
   }, [solicitud, isOpen]);
 
@@ -38,6 +63,7 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
       setComentarioAdmin('');
       setComentarioInicialAdmin('');
       setCambiandoStatus(false);
+      setSuministrosParciales([]);
     }
   }, [isOpen]);
 
@@ -46,8 +72,8 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
   const { fecha, hora } = solicitud ? formatearFecha(solicitud.fechaHora) : { fecha: "", hora: "" };
 
   const statusOptions = [
-    { value: 'pendiente autorizacion', label: 'Pendiente Autorización' },
-    { value: 'autorizada', label: 'Autorizada' },
+    { value: 'pendiente surtido', label: 'Pendiente Surtido' },
+    { value: 'en proceso', label: 'En proceso' },
     { value: 'rechazada', label: 'Rechazada' },
     { value: 'entrega parcial', label: 'Entrega Parcial' },
     { value: 'surtido', label: 'Surtido' },
@@ -61,26 +87,74 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
     const statusActualNormalizado = solicitud.status ? solicitud.status.trim().toLowerCase() : '';
     const statusSeleccionadoNormalizado = statusSeleccionado.trim().toLowerCase();
     
-    // Comparar con el comentario inicial en lugar del comentario actual de la solicitud
     const comentarioActual = comentarioInicialAdmin;
     const comentarioNuevo = comentarioAdmin.trim();
     
-    // Hay cambios si el status cambió O si el comentario cambió
     return statusActualNormalizado !== statusSeleccionadoNormalizado || comentarioActual !== comentarioNuevo;
+  };
+
+  const handleCheckboxChange = (index) => {
+    setSuministrosParciales(prev => {
+      const nuevos = [...prev];
+      nuevos[index] = {
+        ...nuevos[index],
+        seleccionado: !nuevos[index].seleccionado
+      };
+      return nuevos;
+    });
+  };
+
+  const handleCantidadParcialChange = (index, valor) => {
+    setSuministrosParciales(prev => {
+      const nuevos = [...prev];
+      nuevos[index] = {
+        ...nuevos[index],
+        cantidadEntregada: valor === '' ? '' : parseInt(valor) || 0
+      };
+      return nuevos;
+    });
+  };
+
+  const handleUnidadParcialChange = (index, unidad) => {
+    setSuministrosParciales(prev => {
+      const nuevos = [...prev];
+      nuevos[index] = {
+        ...nuevos[index],
+        unidadEntregada: unidad
+      };
+      return nuevos;
+    });
   };
 
   const handleCerrarModal = async () => {
     if (esAdmin && hayCambiosPendientes()) {
       setCambiandoStatus(true);
+
+      if (statusSeleccionado === 'entrega parcial') {
+        const suministrosParaEnviar = suministrosParciales
+          .filter(s => s.seleccionado && s.cantidadEntregada > 0)
+          .map(s => ({
+            nombre: s.nombre,
+            unidad: s.unidadEntregada,
+            cantidad: s.cantidadEntregada
+          }));
+
+        if (suministrosParaEnviar.length > 0) {
+          const resultado = await registrarSuministrosParciales(solicitud.id, suministrosParaEnviar);
+          if (!resultado.success) {
+            setCambiandoStatus(false);
+            alert('Error al registrar la entrega parcial');
+            return;
+          }
+        }
+      }
+
       const resultado = await cambiarStatusSolicitud(solicitud.id, statusSeleccionado, comentarioAdmin);
       setCambiandoStatus(false);
       
       if (resultado.success) {
-        // Actualizar la solicitud con los nuevos valores
         solicitud.status = statusSeleccionado;
         solicitud.comentarioAdmin = comentarioAdmin.trim();
-        
-        // Actualizar el comentario inicial para la próxima vez que se abra
         setComentarioInicialAdmin(comentarioAdmin.trim());
       }
     }
@@ -114,12 +188,11 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
 
   const botonProps = getBotonCerrarProps();
 
-  // Función para obtener el color del status
   const getStatusColor = (status) => {
     switch (status) {
-      case "pendiente autorizacion":
+      case "pendiente surtido":
         return "bg-blue-100 text-blue-700 border-blue-200";
-      case "autorizada":
+      case "en proceso":
         return "bg-purple-100 text-purple-700 border-purple-200";
       case "rechazada":
         return "bg-red-100 text-red-700 border-red-200";
@@ -132,7 +205,6 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
     }
   };
 
-  // Función para obtener el color de prioridad
   const getPrioridadColor = (prioridad) => {
     switch (prioridad) {
       case 'muy alto':
@@ -249,6 +321,90 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
                       ))}
                     </select>
 
+                    {/* Mostrar productos para entrega parcial */}
+                    {statusSeleccionado === 'entrega parcial' && (
+                      <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <h4 className="font-medium text-gray-800 mb-3 flex items-center gap-2">
+                          <FaBoxOpen className="text-yellow-600" />
+                          Seleccionar Productos Entregados
+                        </h4>
+                        <div className="space-y-3">
+                          {suministrosParciales.map((suministro, index) => (
+                            <div 
+                              key={index} 
+                              className={`bg-white p-4 rounded-lg border-2 transition-all ${
+                                suministro.seleccionado 
+                                  ? 'border-yellow-400 bg-yellow-50' 
+                                  : 'border-gray-200'
+                              }`}
+                            >
+                              {/* Checkbox y nombre del producto */}
+                              <div className="flex items-start gap-3 mb-3">
+                                <input
+                                  type="checkbox"
+                                  checked={suministro.seleccionado}
+                                  onChange={() => handleCheckboxChange(index)}
+                                  className="mt-1 w-5 h-5 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500 cursor-pointer"
+                                  disabled={cambiandoStatus}
+                                />
+                                <div className="flex-1">
+                                  <span className="font-medium text-gray-900 block">{suministro.nombre}</span>
+                                  <span className="text-xs text-gray-500">
+                                    Cantidad solicitada: <span className="font-semibold">{suministro.cantidadSolicitada}</span> {suministro.unidad}
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              {/* Inputs solo si está seleccionado */}
+                              {suministro.seleccionado && (
+                                <div className="grid grid-cols-2 gap-3 pl-8">
+                                  {/* Cantidad Entregada */}
+                                  <div>
+                                    <label className="text-xs font-medium text-gray-700 block mb-1">
+                                      Cantidad entregada:
+                                    </label>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      max={suministro.cantidadSolicitada}
+                                      value={suministro.cantidadEntregada}
+                                      onChange={(e) => handleCantidadParcialChange(index, e.target.value)}
+                                      onFocus={(e) => e.target.select()}
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm"
+                                      disabled={cambiandoStatus}
+                                    />
+                                  </div>
+
+                                  {/* Unidad de Medida */}
+                                  <div>
+                                    <label className="text-xs font-medium text-gray-700 block mb-1">
+                                      Unidad de medida:
+                                    </label>
+                                    <select
+                                      value={suministro.unidadEntregada}
+                                      onChange={(e) => handleUnidadParcialChange(index, e.target.value)}
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm bg-white"
+                                      disabled={cambiandoStatus}
+                                    >
+                                      {unidades.map(unidad => (
+                                        <option key={unidad.id} value={unidad.nombre}>
+                                          {unidad.nombre}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-xs text-yellow-700 mt-3 flex items-start gap-2">
+                          <span>💡</span>
+                          <span>Marca los productos que fueron entregados y ajusta las cantidades si es necesario. Solo se guardarán los productos seleccionados.</span>
+                        </p>
+                      </div>
+                    )}
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Comentario administrativo (opcional)
@@ -294,7 +450,7 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
                 </div>
               )}
 
-              {/* Comentarios del administrador - Solo mostrar si existe */}
+              {/* Comentarios del administrador */}
               {solicitud.comentarioAdmin && (
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
                   <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
@@ -307,7 +463,7 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
                 </div>
               )}
 
-              {/* Productos solicitados */}
+              {/* Productos solicitados y entregas parciales */}
               <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
                   <FaList className="text-blue-600" />
@@ -319,27 +475,71 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
                 
                 {solicitud.suministros && solicitud.suministros.length > 0 ? (
                   <div className="space-y-3">
-                    {solicitud.suministros.map((suministro, index) => (
-                      <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-gray-900 mb-1">{suministro.nombre}</h4>
-                        </div>
-                        <div className="flex items-center gap-4 text-sm">
-                          <div className="text-center">
-                            <span className="block text-gray-500">Cantidad</span>
-                            <span className="text-blue-700 px-3 py-1 rounded-full font-semibold">
-                              {suministro.cantidad}
-                            </span>
+                    {solicitud.suministros.map((suministro, index) => {
+                      // Filtrar entregas parciales de este producto
+                      const entregasParciales = suministrosParcialesContext.filter(
+                        parcial => parcial.nombre.toLowerCase() === suministro.nombre.toLowerCase()
+                      );
+
+                      return (
+                        <div key={index} className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
+                          {/* Producto solicitado */}
+                          <div className="flex items-center justify-between p-4 hover:bg-gray-100 transition-colors">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-gray-900 mb-1">{suministro.nombre}</h4>
+                              <span className="text-xs text-gray-500">Solicitado</span>
+                            </div>
+                            <div className="flex items-center gap-4 text-sm">
+                              <div className="text-center">
+                                <span className="block text-gray-500 text-xs">Cantidad</span>
+                                <span className="text-blue-700 px-3 py-1 rounded-full font-semibold">
+                                  {suministro.cantidad}
+                                </span>
+                              </div>
+                              <div className="text-center">
+                                <span className="block text-gray-500 text-xs">Unidad</span>
+                                <span className="text-gray-700 px-3 py-1 rounded-full font-medium">
+                                  {suministro.unidad}
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-center">
-                            <span className="block text-gray-500">Unidad</span>
-                            <span className="text-gray-700 px-3 py-1 rounded-full font-medium">
-                              {suministro.unidad}
-                            </span>
-                          </div>
+
+                          {/* Productos parciales entregados */}
+                          {entregasParciales.length > 0 && (
+                            <div className="bg-green-50 border-t border-green-200">
+                              {entregasParciales.map((parcial, idx) => (
+                                <div key={idx} className="flex items-center justify-between p-3 px-4">
+                                  <div className="flex items-center gap-2 flex-1">
+                                    <FaCheckCircle className="text-green-600 text-sm" />
+                                    <div>
+                                      <span className="text-sm text-gray-700 font-medium">Entrega Parcial #{idx + 1}</span>
+                                      <span className="text-xs text-gray-500 block">
+                                        {parcial.createdAt ? formatearFecha(parcial.createdAt).fecha : 'Fecha no disponible'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-4 text-sm">
+                                    <div className="text-center">
+                                      <span className="block text-green-600 text-xs mb-1">Entregado</span>
+                                      <span className="text-green-700 px-3 py-1 rounded-full font-semibold bg-green-100">
+                                        {parcial.cantidad}
+                                      </span>
+                                    </div>
+                                    <div className="text-center">
+                                      <span className="block text-green-600 text-xs mb-1">Unidad</span>
+                                      <span className="text-green-700 px-3 py-1 rounded-full font-medium bg-green-100">
+                                        {parcial.unidad}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="text-center py-8 text-gray-500">

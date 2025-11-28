@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import Modal from "react-modal";
 import { FiBox } from "react-icons/fi";
 
-// Configurar el elemento raíz para el modal
 Modal.setAppElement('#root');
 
 const ModalProducto = ({ 
@@ -10,8 +9,9 @@ const ModalProducto = ({
     onRequestClose, 
     onGuardar, 
     cargando = false, 
-    modo = 'crear', // 'crear' o 'editar'
-    productoParaEditar = null 
+    modo = 'crear',
+    productoParaEditar = null,
+    unidadesDisponibles = [] // Nueva prop
 }) => {
     const [formulario, setFormulario] = useState({
         nombre: '',
@@ -20,11 +20,6 @@ const ModalProducto = ({
 
     const [errores, setErrores] = useState({});
 
-    // Lista de unidades predefinidas (basadas en tus productos existentes)
-    const unidadesPredefinidas = [
-        'PZA', 'CAJA', 'BIDON', 'PAQUETE', 'KG', 'BOLSA', 'PAR'
-    ];
-
     useEffect(() => {
         if (modo === 'editar' && productoParaEditar) {
             setFormulario({
@@ -32,13 +27,11 @@ const ModalProducto = ({
                 unidad: productoParaEditar.unidad || ''
             });
         } else {
-            // Resetear formulario para modo crear
             setFormulario({
                 nombre: '',
                 unidad: ''
             });
         }
-        // Limpiar errores cuando cambie el modo o producto
         setErrores({});
     }, [modo, productoParaEditar, isOpen]);
 
@@ -48,7 +41,6 @@ const ModalProducto = ({
             [campo]: valor
         }));
         
-        // Limpiar error del campo cuando el usuario empiece a escribir
         if (errores[campo]) {
             setErrores(prev => ({
                 ...prev,
@@ -60,7 +52,6 @@ const ModalProducto = ({
     const validarFormulario = () => {
         const nuevosErrores = {};
 
-        // Validar nombre
         if (!formulario.nombre.trim()) {
             nuevosErrores.nombre = 'El nombre del producto es requerido';
         } else if (formulario.nombre.trim().length < 3) {
@@ -69,7 +60,6 @@ const ModalProducto = ({
             nuevosErrores.nombre = 'El nombre no puede exceder 255 caracteres';
         }
 
-        // Validar unidad
         if (!formulario.unidad.trim()) {
             nuevosErrores.unidad = 'La unidad de medida es requerida';
         } else if (formulario.unidad.trim().length < 2) {
@@ -190,8 +180,8 @@ const ModalProducto = ({
                             <input
                                 type="text"
                                 value={formulario.unidad}
-                                onChange={(e) => handleInputChange('unidad', e.target.value.toUpperCase())}
-                                placeholder="Ej: BIDON, CAJA, PZA"
+                                onChange={(e) => handleInputChange('unidad', e.target.value)}
+                                placeholder="Ej: Kilogramo, Litro, Pieza"
                                 disabled={cargando}
                                 className={`w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed ${
                                     errores.unidad ? 'border-red-300 bg-red-50' : 'border-gray-300'
@@ -199,8 +189,8 @@ const ModalProducto = ({
                                 list="unidades"
                             />
                             <datalist id="unidades">
-                                {unidadesPredefinidas.map(unidad => (
-                                    <option key={unidad} value={unidad} />
+                                {unidadesDisponibles.map(unidad => (
+                                    <option key={unidad.id} value={unidad.nombre} />
                                 ))}
                             </datalist>
                         </div>
@@ -213,27 +203,35 @@ const ModalProducto = ({
                             </p>
                         )}
                         
-                        {/* Unidades sugeridas */}
-                        <div className="mt-2">
-                            <p className="text-xs text-gray-500 mb-1">Unidades comunes:</p>
-                            <div className="flex flex-wrap gap-1">
-                                {unidadesPredefinidas.map(unidad => (
-                                    <button
-                                        key={unidad}
-                                        type="button"
-                                        onClick={() => handleInputChange('unidad', unidad)}
-                                        disabled={cargando}
-                                        className={`text-xs px-2 py-1 rounded border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                                            formulario.unidad === unidad
-                                                ? 'bg-blue-100 border-blue-300 text-blue-700'
-                                                : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
-                                        }`}
-                                    >
-                                        {unidad}
-                                    </button>
-                                ))}
+                        {/* Unidades disponibles */}
+                        {unidadesDisponibles.length > 0 && (
+                            <div className="mt-2">
+                                <p className="text-xs text-gray-500 mb-1">Unidades disponibles:</p>
+                                <div className="flex flex-wrap gap-1">
+                                    {unidadesDisponibles.map(unidad => (
+                                        <button
+                                            key={unidad.id}
+                                            type="button"
+                                            onClick={() => handleInputChange('unidad', unidad.nombre)}
+                                            disabled={cargando}
+                                            className={`text-xs px-2 py-1 rounded border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                                                formulario.unidad === unidad.nombre
+                                                    ? 'bg-blue-100 border-blue-300 text-blue-700'
+                                                    : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                                            }`}
+                                        >
+                                            {unidad.nombre}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
+                        )}
+
+                        {unidadesDisponibles.length === 0 && (
+                            <p className="text-xs text-amber-600 mt-2">
+                                No hay unidades de medida registradas. Crea una primero.
+                            </p>
+                        )}
                     </div>
 
                     {/* Botones */}

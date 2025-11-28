@@ -6,6 +6,8 @@ import usuarioRoutes from './routes/usuarioRoutes.js'
 import solicitudRoutes  from './routes/solicitudRoutes.js'
 import dashboardRoutes from './routes/dashboardRoutes.js'
 import productoRoutes from './routes/productoRoutes.js';
+import unidadMedidaRoutes from "./routes/unidadMedidaRoutes.js"
+import suministroParcialRoutes from './routes/suministroParcialRoutes.js';
 
 const app = express();
 app.use(express.json());
@@ -47,6 +49,8 @@ app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/solicitudes', solicitudRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/productos', productoRoutes)
+app.use('/api/unidades-medida', unidadMedidaRoutes);
+app.use('/api/suministros-parciales', suministroParcialRoutes);
 
 
 const PORT = process.env.PORT || 3000;

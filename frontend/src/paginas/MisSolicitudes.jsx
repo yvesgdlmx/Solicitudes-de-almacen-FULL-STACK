@@ -6,6 +6,7 @@ import FiltroEstadoSolicitudes from "../components/FiltroEstadoSolicitudes"
 import LeyendaHorarios from "../components/LeyendaHorarios"
 import useSolicitud from "../hooks/useSolicitud"
 import useFormularioSolicitud from "../hooks/useFormularioSolicitud"
+import useUnidadMedida from "../hooks/useUnidadMedida"
 import Spinner from "../components/spinners/Spinner"
 
 const MisSolicitudes = () => {
@@ -21,7 +22,7 @@ const MisSolicitudes = () => {
     obtenerSolicitud
   } = useSolicitud();
 
-  // AGREGAR cerrarModal aquí:
+  const { unidades } = useUnidadMedida();
   const { abrirModal, cerrarModal, modo } = useFormularioSolicitud();
   const [modalDetalleAbierto, setModalDetalleAbierto] = useState(false);
   const [solicitudDetalle, setSolicitudDetalle] = useState(null);
@@ -46,7 +47,6 @@ const MisSolicitudes = () => {
 
   const handleFiltroEstado = (estado) => setFiltroEstado(estado);
 
-  // AQUÍ ESTÁ EL CAMBIO IMPORTANTE:
   const onGuardar = async (formulario) => {
     let resp;
     
@@ -56,7 +56,6 @@ const MisSolicitudes = () => {
       resp = await handleGuardarSolicitud(formulario);
     }
     
-    // Si fue exitoso, cerrar el modal
     if (resp) {
       cerrarModal();
     }
@@ -110,6 +109,7 @@ const MisSolicitudes = () => {
       <ModalNuevaSolicitud
         onGuardar={onGuardar}
         cargando={cargando}
+        unidadesDisponibles={unidades}
       />
 
       <ModalDetalleSolicitud 
