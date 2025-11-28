@@ -1,7 +1,7 @@
 import React, {useState, useEffect} from "react";
 import Modal from "react-modal";
 import { formatearTextoEstado, formatearFecha } from "../../functions/Index";
-import { FaTimes, FaFileAlt, FaUser, FaExclamationTriangle, FaList, FaComment, FaSave, FaCalendarAlt, FaClock, FaUserShield, FaFilePdf, FaBoxOpen, FaCheckCircle } from "react-icons/fa";
+import { FaTimes, FaFileAlt, FaUser, FaExclamationTriangle, FaList, FaComment, FaSave, FaCalendarAlt, FaClock, FaUserShield, FaFilePdf, FaBoxOpen, FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import SolicitudPDF from "../herramientasPDF/SolicitudPDF";
 import useSolicitud from "../../hooks/useSolicitud";
@@ -131,12 +131,13 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
       setCambiandoStatus(true);
 
       if (statusSeleccionado === 'entrega parcial') {
+        // Ahora enviamos TODOS los productos seleccionados (incluso con cantidad 0)
         const suministrosParaEnviar = suministrosParciales
-          .filter(s => s.seleccionado && s.cantidadEntregada > 0)
+          .filter(s => s.seleccionado) // Solo los marcados
           .map(s => ({
             nombre: s.nombre,
             unidad: s.unidadEntregada,
-            cantidad: s.cantidadEntregada
+            cantidad: s.cantidadEntregada || 0 // Si está vacío, enviar 0
           }));
 
         if (suministrosParaEnviar.length > 0) {
@@ -326,7 +327,7 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
                       <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                         <h4 className="font-medium text-gray-800 mb-3 flex items-center gap-2">
                           <FaBoxOpen className="text-yellow-600" />
-                          Seleccionar Productos Entregados
+                          Seleccionar Productos y Cantidades Entregadas
                         </h4>
                         <div className="space-y-3">
                           {suministrosParciales.map((suministro, index) => (
@@ -398,10 +399,16 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
                             </div>
                           ))}
                         </div>
-                        <p className="text-xs text-yellow-700 mt-3 flex items-start gap-2">
-                          <span>💡</span>
-                          <span>Marca los productos que fueron entregados y ajusta las cantidades si es necesario. Solo se guardarán los productos seleccionados.</span>
-                        </p>
+                        <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                          <p className="text-xs text-amber-800 flex items-start gap-2">
+                            <span className="text-base">💡</span>
+                            <span>
+                              <strong>Importante:</strong> Marca los productos procesados y ajusta las cantidades:
+                              <br />• Si entregaste una cantidad, ingresa el número correspondiente
+                              <br />• Si NO entregaste el producto, marca la casilla y pon cantidad en <strong>0</strong>
+                            </span>
+                          </p>
+                        </div>
                       </div>
                     )}
 
@@ -505,36 +512,49 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
                             </div>
                           </div>
 
-                          {/* Productos parciales entregados */}
+                          {/* Productos parciales entregados/no entregados */}
                           {entregasParciales.length > 0 && (
-                            <div className="bg-green-50 border-t border-green-200">
-                              {entregasParciales.map((parcial, idx) => (
-                                <div key={idx} className="flex items-center justify-between p-3 px-4">
-                                  <div className="flex items-center gap-2 flex-1">
-                                    <FaCheckCircle className="text-green-600 text-sm" />
-                                    <div>
-                                      <span className="text-sm text-gray-700 font-medium">Entrega Parcial #{idx + 1}</span>
-                                      <span className="text-xs text-gray-500 block">
-                                        {parcial.createdAt ? formatearFecha(parcial.createdAt).fecha : 'Fecha no disponible'}
-                                      </span>
+                            <div className="border-t border-gray-500 border-dashed">
+                              {entregasParciales.map((parcial, idx) => {
+                                // Determinar si fue entregado o no
+                                const fueEntregado = parcial.cantidad > 0;
+                                const colorClase = fueEntregado ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200';
+                                const iconoColor = fueEntregado ? 'text-green-600' : 'text-red-600';
+                                const textoColor = fueEntregado ? 'text-green-700' : 'text-red-700';
+                                const badgeColor = fueEntregado ? 'bg-green-100' : 'bg-red-100';
+                                const etiqueta = fueEntregado ? 'Entregado' : 'No entregado';
+
+                                return (
+                                  <div key={idx} className={`flex items-center justify-between p-3 px-4 ${colorClase} ${idx > 0 ? 'border-t' : ''}`}>
+                                    <div className="flex items-center gap-2 flex-1">
+                                      {fueEntregado ? (
+                                        <FaCheckCircle className={`${iconoColor} text-sm`} />
+                                      ) : (
+                                        <FaTimesCircle className={`${iconoColor} text-sm`} />
+                                      )}
+                                      <div>
+                                        <span className={`text-sm font-medium ${textoColor}`}>
+                                          {fueEntregado ? `Entrega Parcial #${idx + 1}` : 'Sin entrega'}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-4 text-sm">
+                                      <div className="text-center">
+                                        <span className={`block ${textoColor} text-xs mb-1`}>{etiqueta}</span>
+                                        <span className={`${textoColor} px-3 py-1 rounded-full font-semibold ${badgeColor}`}>
+                                          {parcial.cantidad}
+                                        </span>
+                                      </div>
+                                      <div className="text-center">
+                                        <span className={`block ${textoColor} text-xs mb-1`}>Unidad</span>
+                                        <span className={`${textoColor} px-3 py-1 rounded-full font-medium ${badgeColor}`}>
+                                          {parcial.unidad}
+                                        </span>
+                                      </div>
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-4 text-sm">
-                                    <div className="text-center">
-                                      <span className="block text-green-600 text-xs mb-1">Entregado</span>
-                                      <span className="text-green-700 px-3 py-1 rounded-full font-semibold bg-green-100">
-                                        {parcial.cantidad}
-                                      </span>
-                                    </div>
-                                    <div className="text-center">
-                                      <span className="block text-green-600 text-xs mb-1">Unidad</span>
-                                      <span className="text-green-700 px-3 py-1 rounded-full font-medium bg-green-100">
-                                        {parcial.unidad}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           )}
                         </div>

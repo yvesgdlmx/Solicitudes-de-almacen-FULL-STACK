@@ -29,15 +29,18 @@ export const crearSuministroParcial = async (req, res) => {
             return res.status(404).json({ msg: 'Solicitud no encontrada' });
         }
 
-        // Crear los suministros parciales
+        // Crear los suministros parciales (ahora permite cantidad 0)
         for (const item of suministrosParciales) {
             const { cantidad, nombre, unidad } = item;
-            await SuministroParcial.create({
-                cantidad,
-                nombre,
-                unidad,
-                SolicitudId: solicitud.id
-            }, { transaction: t });
+            // Validar que cantidad sea >= 0 (antes era > 0)
+            if (cantidad >= 0) {
+                await SuministroParcial.create({
+                    cantidad,
+                    nombre,
+                    unidad,
+                    SolicitudId: solicitud.id
+                }, { transaction: t });
+            }
         }
 
         // Actualizar el status de la solicitud a "entrega parcial"
