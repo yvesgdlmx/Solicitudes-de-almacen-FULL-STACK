@@ -29,7 +29,7 @@ const ModalNuevaSolicitud = ({ onGuardar, cargando = false, unidadesDisponibles 
         <Modal
             isOpen={isOpen}
             onRequestClose={cerrarModal}
-            className="w-[95vw] max-w-[800px] mx-auto mt-8 bg-white rounded-xl shadow-2xl outline-none max-h-[90vh] overflow-auto"
+            className="w-[98vw] max-w-[900px] mx-auto mt-8 bg-white rounded-xl shadow-2xl outline-none max-h-[90vh] overflow-auto"
             overlayClassName="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center p-4 z-50"
             contentLabel={esEdicion ? "Editar Solicitud" : "Nueva Solicitud"}
             shouldCloseOnOverlayClick={!cargando}

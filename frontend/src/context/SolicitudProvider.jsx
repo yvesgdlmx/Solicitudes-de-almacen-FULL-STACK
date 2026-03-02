@@ -48,7 +48,7 @@ const SolicitudProvider = ({ children }) => {
                 comentarioUser: nuevaSolicitud.comentario,
                 suministros: nuevaSolicitud.productos.map((producto) => ({
                     nombre: producto.producto,
-                    cantidad: parseInt(producto.cantidad),
+                    cantidad: parseFloat(producto.cantidad),
                     unidad: producto.unidad
                 })),
             }; 
@@ -128,7 +128,7 @@ const SolicitudProvider = ({ children }) => {
                 comentarioUser: formulario.comentario,
                 suministros: formulario.productos.map((p) => ({
                     nombre: p.producto,
-                    cantidad: parseInt(p.cantidad),
+                    cantidad: parseFloat(p.cantidad),
                     unidad: p.unidad
                 }))
             };

@@ -8,7 +8,7 @@ const Suministro = db.define('suministros', {
         autoIncrement: true,
     },
     cantidad: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.DECIMAL(10,2),
         allowNull: false
     },
     nombre: {

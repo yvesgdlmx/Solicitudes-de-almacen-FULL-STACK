@@ -11,11 +11,12 @@ const ModalProducto = ({
     cargando = false, 
     modo = 'crear',
     productoParaEditar = null,
-    unidadesDisponibles = [] // Nueva prop
+    unidadesDisponibles = []
 }) => {
     const [formulario, setFormulario] = useState({
         nombre: '',
-        unidad: ''
+        unidad: '',
+        codigo: ''
     });
 
     const [errores, setErrores] = useState({});
@@ -24,12 +25,14 @@ const ModalProducto = ({
         if (modo === 'editar' && productoParaEditar) {
             setFormulario({
                 nombre: productoParaEditar.nombre || '',
-                unidad: productoParaEditar.unidad || ''
+                unidad: productoParaEditar.unidad || '',
+                codigo: productoParaEditar.codigo || ''
             });
         } else {
             setFormulario({
                 nombre: '',
-                unidad: ''
+                unidad: '',
+                codigo: ''
             });
         }
         setErrores({});
@@ -40,7 +43,6 @@ const ModalProducto = ({
             ...prev,
             [campo]: valor
         }));
-        
         if (errores[campo]) {
             setErrores(prev => ({
                 ...prev,
@@ -68,19 +70,26 @@ const ModalProducto = ({
             nuevosErrores.unidad = 'La unidad no puede exceder 50 caracteres';
         }
 
+        if (!formulario.codigo.trim()) {
+            nuevosErrores.codigo = 'El código es requerido';
+        } else if (formulario.codigo.trim().length < 2) {
+            nuevosErrores.codigo = 'El código debe tener al menos 2 caracteres';
+        } else if (formulario.codigo.trim().length > 50) {
+            nuevosErrores.codigo = 'El código no puede exceder 50 caracteres';
+        }
+
         setErrores(nuevosErrores);
         return Object.keys(nuevosErrores).length === 0;
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        
         if (validarFormulario()) {
             const datosParaEnviar = {
                 nombre: formulario.nombre.trim(),
-                unidad: formulario.unidad.trim()
+                unidad: formulario.unidad.trim(),
+                codigo: formulario.codigo.trim()
             };
-            
             onGuardar(datosParaEnviar);
         }
     };
@@ -146,6 +155,31 @@ const ModalProducto = ({
 
                 {/* Formulario */}
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* Campo Código */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Código del Producto *
+                        </label>
+                        <input
+                            type="text"
+                            value={formulario.codigo}
+                            onChange={(e) => handleInputChange('codigo', e.target.value)}
+                            placeholder="Ej: ACET-20L"
+                            disabled={cargando}
+                            className={`w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed ${
+                                errores.codigo ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                            }`}
+                        />
+                        {errores.codigo && (
+                            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                                {errores.codigo}
+                            </p>
+                        )}
+                    </div>
+
                     {/* Campo Nombre */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -202,8 +236,6 @@ const ModalProducto = ({
                                 {errores.unidad}
                             </p>
                         )}
-                        
-                        {/* Unidades disponibles */}
                         {unidadesDisponibles.length > 0 && (
                             <div className="mt-2">
                                 <p className="text-xs text-gray-500 mb-1">Unidades disponibles:</p>
@@ -226,7 +258,6 @@ const ModalProducto = ({
                                 </div>
                             </div>
                         )}
-
                         {unidadesDisponibles.length === 0 && (
                             <p className="text-xs text-amber-600 mt-2">
                                 No hay unidades de medida registradas. Crea una primero.
@@ -246,7 +277,7 @@ const ModalProducto = ({
                         </button>
                         <button
                             type="submit"
-                            disabled={cargando || !formulario.nombre.trim() || !formulario.unidad.trim()}
+                            disabled={cargando || !formulario.nombre.trim() || !formulario.unidad.trim() || !formulario.codigo.trim()}
                             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                         >
                             {cargando && (

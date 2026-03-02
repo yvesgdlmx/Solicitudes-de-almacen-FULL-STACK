@@ -1,23 +1,24 @@
 import React from "react";
 import { FiEdit2, FiTrash2, FiBox, FiPlus } from "react-icons/fi";
 
-const TablaProductos = ({ 
-  productosFiltrados, 
+const TablaProductos = ({
+  productosFiltrados,
   productos,
   filtroTexto,
   cargando,
-  onEditar, 
+  onEditar,
   onEliminar,
-  onNuevoProducto 
+  onNuevoProducto,
 }) => {
-  
   if (productosFiltrados.length === 0) {
     return (
       <div className="overflow-x-auto">
         <div className="text-center py-12">
           <FiBox className="text-4xl text-gray-300 mx-auto mb-4" />
           <p className="text-gray-500 text-lg">
-            {filtroTexto ? 'No se encontraron productos con ese filtro' : 'No hay productos registrados'}
+            {filtroTexto
+              ? "No se encontraron productos con ese filtro"
+              : "No hay productos registrados"}
           </p>
           {!filtroTexto && (
             <button
@@ -43,6 +44,9 @@ const TablaProductos = ({
                 ID
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Código
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Nombre del Producto
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -55,9 +59,17 @@ const TablaProductos = ({
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {productosFiltrados.map((producto) => (
-              <tr key={producto.id} className="hover:bg-gray-50 transition-colors">
+              <tr
+                key={producto.id}
+                className="hover:bg-gray-50 transition-colors"
+              >
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {producto.id}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                    {producto.codigo}
+                  </span>
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-900">
                   <div className="max-w-xs">

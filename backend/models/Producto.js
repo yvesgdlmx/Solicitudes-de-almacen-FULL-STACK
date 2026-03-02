@@ -14,6 +14,11 @@ const Producto = db.define('productos', {
     unidad: {
         type: DataTypes.STRING,
         allowNull: false
+    },
+    codigo: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true
     }
 }, {
     timestamps: false
