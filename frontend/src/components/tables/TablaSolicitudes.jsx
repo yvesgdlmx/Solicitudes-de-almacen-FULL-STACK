@@ -65,6 +65,25 @@ const TablaSolicitudes = ({ datos = [], titulo = "", onCrearSolicitud, showAccio
     if (nuevaPagina >= 1 && nuevaPagina <= totalPaginas) setPagina(nuevaPagina);
   };
 
+  // Paginador compacto
+  const getPaginasParaMostrar = () => {
+    const paginas = [];
+    if (totalPaginas <= 7) {
+      for (let i = 1; i <= totalPaginas; i++) {
+        paginas.push(i);
+      }
+    } else {
+      if (pagina <= 3) {
+        paginas.push(1, 2, 3, 4, '...', totalPaginas);
+      } else if (pagina >= totalPaginas - 2) {
+        paginas.push(1, '...', totalPaginas - 3, totalPaginas - 2, totalPaginas - 1, totalPaginas);
+      } else {
+        paginas.push(1, '...', pagina - 1, pagina, pagina + 1, '...', totalPaginas);
+      }
+    }
+    return paginas;
+  };
+
   const mostrandoInicio = datosFiltrados.length === 0 ? 0 : indiceInicio + 1;
   const mostrandoFin = Math.min(indiceInicio + entradas, datosFiltrados.length);
 
@@ -260,19 +279,26 @@ const TablaSolicitudes = ({ datos = [], titulo = "", onCrearSolicitud, showAccio
             ‹
           </button>
 
-          {Array.from({ length: totalPaginas }, (_, i) => (
-            <button
-              key={i}
-              onClick={() => cambiarPagina(i + 1)}
-              className={`px-3 py-1.5 rounded-md border text-sm ${
-                pagina === i + 1
-                  ? "bg-blue-500 text-white border-blue-500"
-                  : "border-gray-200 text-gray-700 hover:bg-gray-100"
-              }`}
-            >
-              {i + 1}
-            </button>
-          ))}
+          {getPaginasParaMostrar().map((p, idx) =>
+            p === '...'
+              ? (
+                <span key={"ellipsis-" + idx} className="px-2 text-gray-400 select-none">...</span>
+              )
+              : (
+                <button
+                  key={p}
+                  onClick={() => cambiarPagina(p)}
+                  className={`px-3 py-1.5 rounded-md border text-sm ${
+                    pagina === p
+                      ? "bg-blue-500 text-white border-blue-500"
+                      : "border-gray-200 text-gray-700 hover:bg-gray-100"
+                  }`}
+                  disabled={pagina === p}
+                >
+                  {p}
+                </button>
+              )
+          )}
 
           <button
             onClick={() => cambiarPagina(pagina + 1)}
