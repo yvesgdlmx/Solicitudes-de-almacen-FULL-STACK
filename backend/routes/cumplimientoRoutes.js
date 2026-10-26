@@ -1,0 +1,10 @@
+import { Router } from 'express';
+import checkAuth from '../middleware/checkAuth.js';
+import soloSuperadmin from '../middleware/soloSuperadmin.js';
+import { obtenerCumplimiento, actualizarSeguimiento, obtenerHistorial } from '../controllers/cumplimientoController.js';
+const router = Router();
+router.use(checkAuth, soloSuperadmin);
+router.get('/', obtenerCumplimiento);
+router.put('/:id', actualizarSeguimiento);
+router.get('/:id/historial', obtenerHistorial);
+export default router;

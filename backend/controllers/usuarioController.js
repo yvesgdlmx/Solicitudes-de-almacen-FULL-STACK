@@ -2,16 +2,19 @@ import Usuario from "../models/Usuario.js";
 import generarJWT from "../helpers/generarJWT.js";
 import { Op } from "sequelize";
 import path from "path";
+import { ROLES, puedeGestionarUsuarios, puedeGestionarCuenta } from '../helpers/roles.js';
 
 export const nuevoUsuario = async (req, res) => {
     const { user, password, rol, area } = req.body;
 
     try {
         // Verificar que quien hace la petición sea admin
-        if (req.usuario.rol !== 'superadmin') {
+        if (!puedeGestionarUsuarios(req.usuario.rol)) {
             const error = new Error('No tienes permisos para crear usuarios');
             return res.status(403).json({ msg: error.message });
         }
+
+        if (!ROLES.includes(rol || 'user')) return res.status(400).json({ msg: 'Rol inválido' });
 
         // Verificar que el usuario no exista
         const existeUsuario = await Usuario.findOne({ where: { user } });
@@ -115,6 +118,40 @@ export const obtenerUsuarioPorId = async (req, res) => {
     }
 }
 
+export const obtenerPasswordUsuario = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        if (!puedeGestionarUsuarios(req.usuario.rol)) {
+            const error = new Error('No tienes permisos para ver contraseñas');
+            return res.status(403).json({ msg: error.message });
+        }
+
+        const usuario = await Usuario.findByPk(id, {
+            attributes: ['id', 'user', 'password', 'rol']
+        });
+
+        if (!usuario) {
+            const error = new Error('Usuario no encontrado');
+            return res.status(404).json({ msg: error.message });
+        }
+
+        if (usuario.rol !== 'user') {
+            const error = new Error('Solo puedes ver contraseñas de cuentas con rol de usuario');
+            return res.status(403).json({ msg: error.message });
+        }
+
+        res.json({
+            id: usuario.id,
+            user: usuario.user,
+            password: usuario.password
+        });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ msg: 'Error en el servidor al obtener la contraseña' });
+    }
+}
+
 export const actualizarColorPerfil = async (req, res) => {
     try {
         const { colorPerfil } = req.body;
@@ -147,7 +184,7 @@ export const editarUsuario = async (req, res) => {
 
     try {
         // Verificar que quien hace la petición sea admin
-        if (req.usuario.rol !== 'superadmin') {
+        if (!puedeGestionarUsuarios(req.usuario.rol)) {
             const error = new Error('No tienes permisos para editar usuarios');
             return res.status(403).json({ msg: error.message });
         }
@@ -158,6 +195,9 @@ export const editarUsuario = async (req, res) => {
             const error = new Error('Usuario no encontrado');
             return res.status(404).json({ msg: error.message });
         }
+
+        if (!puedeGestionarCuenta(req.usuario.rol, usuario.rol)) return res.status(403).json({ msg: 'Solo desarrollo puede modificar una cuenta de desarrollo' });
+        if (!ROLES.includes(rol || usuario.rol)) return res.status(400).json({ msg: 'Rol inválido' });
 
         // Si se está cambiando el nombre de usuario, verificar que no exista otro con ese nombre
         if (user !== usuario.user) {
@@ -175,7 +215,7 @@ export const editarUsuario = async (req, res) => {
 
         // Actualizar los campos
         usuario.user = user;
-        usuario.rol = rol || 'user';
+        usuario.rol = rol || usuario.rol;
         usuario.area = area;
 
         // Solo actualizar la contraseña si se proporciona una nueva
@@ -206,7 +246,7 @@ export const eliminarUsuario = async (req, res) => {
     const {id} = req.params;
 
     try {
-        if(req.usuario.rol !== 'superadmin') {
+        if(!puedeGestionarUsuarios(req.usuario.rol)) {
             const error = new Error('No tienes permisos para eliminar usuarios');
             return res.status(403).json({msg: error.message});
         }
@@ -217,7 +257,9 @@ export const eliminarUsuario = async (req, res) => {
             return res.status(404).json({msg: error.message});
         }
 
-        if(usuario.id === req.usuario-id) {
+        if (!puedeGestionarCuenta(req.usuario.rol, usuario.rol)) return res.status(403).json({ msg: 'Solo desarrollo puede eliminar una cuenta de desarrollo' });
+
+        if(usuario.id === req.usuario.id) {
             const error = new Error('No puedes eliminar tu propio usuario');
             return res.status(400).json({msg: error.message});
         }

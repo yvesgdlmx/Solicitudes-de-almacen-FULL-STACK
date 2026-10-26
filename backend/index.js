@@ -8,6 +8,7 @@ import dashboardRoutes from './routes/dashboardRoutes.js'
 import productoRoutes from './routes/productoRoutes.js';
 import unidadMedidaRoutes from "./routes/unidadMedidaRoutes.js"
 import suministroParcialRoutes from './routes/suministroParcialRoutes.js';
+import cumplimientoRoutes from './routes/cumplimientoRoutes.js';
 
 const app = express();
 app.use(express.json());
@@ -16,7 +17,7 @@ dotenv.config();
 
 try {
     await db.authenticate();
-    db.sync()
+    await db.sync()
     console.log('Conexion a la base de datos exitosa');
 } catch (error) {
     console.error(error);
@@ -51,6 +52,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/productos', productoRoutes)
 app.use('/api/unidades-medida', unidadMedidaRoutes);
 app.use('/api/suministros-parciales', suministroParcialRoutes);
+app.use('/api/cumplimiento', cumplimientoRoutes);
 
 
 const PORT = process.env.PORT || 3000;

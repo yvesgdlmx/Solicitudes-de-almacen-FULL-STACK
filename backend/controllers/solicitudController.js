@@ -1,6 +1,7 @@
-import {Solicitud, Usuario, Suministro, SuministroParcial} from '../models/Index.js';
+import {Solicitud, Usuario, Suministro, SuministroParcial, SeguimientoSurtido} from '../models/Index.js';
 import path from 'path';
 import db from '../config/db.js';
+import { iniciarSeguimiento, registrarCambio } from '../services/seguimientoSurtido.js';
 
 const generarFolio = async (area) => {
     const letraArea = area.charAt(0).toUpperCase();
@@ -32,6 +33,7 @@ export const crearSolicitud = async (req, res) => {
     try {
         const usuario = req.usuario; 
         if(!usuario) {
+            await t.rollback();
             return res.status(401).json({ msg: 'no autorizado'})
         }
         let { prioridad, comentarioUser, suministros } = req.body;
@@ -40,10 +42,12 @@ export const crearSolicitud = async (req, res) => {
             try {
                 suministros = JSON.parse(suministros);
             } catch (error) {
+                await t.rollback();
                 return res.status(400).json({msg: 'Formato de suministros inválido'});
             }
         }
         if(!suministros || !Array.isArray(suministros)) {
+            await t.rollback();
             return res.status(400).json({msg: 'Suministros inválidos'});
         }
         
@@ -56,6 +60,7 @@ export const crearSolicitud = async (req, res) => {
             area: usuario.area,
             comentarioUser
         }, { transaction: t });
+        await iniciarSeguimiento(nuevaSolicitud, t);
         
         for (const item of suministros) {
             const { cantidad, nombre, unidad } = item;
@@ -89,6 +94,7 @@ export const crearSolicitud = async (req, res) => {
 }
 
 export const obtenerSolicitudes = async (req, res) => {
+    if (!['admin', 'superadmin', 'desarrollo'].includes(req.usuario?.rol)) return res.status(403).json({ msg: 'Acceso exclusivo para administradores' });
     try {
         const solicitudes = await Solicitud.findAll({
             order: [["fechaHora", "DESC"]],
@@ -150,7 +156,7 @@ export const obtenerSolicitud = async (req, res) => {
         ];
 
         let solicitud;
-        if (['admin', 'superadmin'].includes(usuario?.rol)) {
+        if (['admin', 'superadmin', 'desarrollo'].includes(usuario?.rol)) {
             solicitud = await Solicitud.findByPk(id, { include });
         } else {
             solicitud = await Solicitud.findOne({
@@ -173,7 +179,7 @@ export const actualizarSolicitud = async (req, res) => {
     const t = await db.transaction();
     try {
         const usuario = req.usuario;
-        if (!usuario) return res.status(401).json({ msg: 'no autorizado' });
+        if (!usuario) { await t.rollback(); return res.status(401).json({ msg: 'no autorizado' }); }
 
         const { id } = req.params;
         let { prioridad, comentarioUser, suministros } = req.body;
@@ -191,7 +197,7 @@ export const actualizarSolicitud = async (req, res) => {
         // Solo el creador puede editar
         const solicitud = await Solicitud.findOne({
             where: { id, solicitante: usuario.id },
-            transaction: t
+            transaction: t, lock: t.LOCK.UPDATE
         });
         if (!solicitud) {
             await t.rollback();
@@ -199,6 +205,11 @@ export const actualizarSolicitud = async (req, res) => {
         }
 
         // Actualizar campos simples
+        const seguimiento = await SeguimientoSurtido.findByPk(solicitud.id, { transaction: t });
+        if (solicitud.status !== 'pendiente surtido' || seguimiento?.responsableId || (seguimiento && new Date() >= seguimiento.limite)) {
+            await t.rollback();
+            return res.status(409).json({ msg: 'No se puede editar una solicitud asignada, atendida o vencida' });
+        }
         const updates = {};
         if (prioridad !== undefined) updates.prioridad = prioridad;
         if (comentarioUser !== undefined) updates.comentarioUser = comentarioUser;
@@ -237,18 +248,24 @@ export const eliminarSolicitud = async (req, res) => {
     const t = await db.transaction();
     try {
         const usuario = req.usuario;
-        if (!usuario) return res.status(401).json({ msg: 'no autorizado' });
+        if (!usuario) { await t.rollback(); return res.status(401).json({ msg: 'no autorizado' }); }
 
         const { id } = req.params;
 
         // Solo el creador puede eliminar
         const solicitud = await Solicitud.findOne({
             where: { id, solicitante: usuario.id },
-            transaction: t
+            transaction: t, lock: t.LOCK.UPDATE
         });
         if (!solicitud) {
             await t.rollback();
             return res.status(404).json({ msg: 'Solicitud no encontrada' });
+        }
+
+        const seguimiento = await SeguimientoSurtido.findByPk(solicitud.id, { transaction: t });
+        if (solicitud.status !== 'pendiente surtido' || seguimiento?.responsableId || (seguimiento && new Date() >= seguimiento.limite)) {
+            await t.rollback();
+            return res.status(409).json({ msg: 'No se puede eliminar una solicitud asignada, atendida o vencida' });
         }
 
         // PRIMERO: Eliminar suministros parciales
@@ -272,7 +289,7 @@ export const eliminarSolicitud = async (req, res) => {
 export const cambiarStatusSolicitud = async (req, res) => {
     try {
         const usuario = req.usuario;
-        if(!['admin', 'superadmin'].includes(usuario?.rol)) {
+        if(!['admin', 'superadmin', 'desarrollo'].includes(usuario?.rol)) {
             return res.status(403).json({ msg: 'No tienes permisos para cambiar el status de las solicitudes'})
         }
 
@@ -289,12 +306,13 @@ export const cambiarStatusSolicitud = async (req, res) => {
             return res.status(404).json({ msg: 'Solicitud no encontrada'})
         }
 
-        solicitud.status = status
-        if(comentarioAdmin !== undefined) {
-            solicitud.comentarioAdmin = comentarioAdmin;
-        }
-        
-        await solicitud.save();
+        await db.transaction(async transaction => {
+            const actual = await Solicitud.findByPk(id, { transaction, lock: transaction.LOCK.UPDATE });
+            await registrarCambio(actual, status, usuario, transaction, { comentarioAdmin });
+            actual.status = status;
+            if (comentarioAdmin !== undefined) actual.comentarioAdmin = comentarioAdmin;
+            await actual.save({ transaction });
+        });
 
         const solicitudActualizada = await Solicitud.findByPk(id, {
             include: [
@@ -309,6 +327,6 @@ export const cambiarStatusSolicitud = async (req, res) => {
         })
     } catch (error) {
         console.error('Error al cambiar el status de la solicitud:', error);
-        res.status(500).json({ msg: 'Error en el servidor al cambiar el status de la solicitud' });
+        res.status(error.status || 500).json({ msg: error.status ? error.message : 'Error en el servidor al cambiar el status de la solicitud' });
     }
 }

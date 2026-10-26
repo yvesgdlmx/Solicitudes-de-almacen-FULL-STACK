@@ -23,7 +23,7 @@ const FormularioProductos = ({ cargando, unidadesDisponibles = [] }) => {
   const { dataDashboard } = useDashboard();
 
   // Puedes seguir usando tus estilos base si quieres
-  const { estilosSelect, estilosSelectError } = useSelectStyles();
+  const { estilosSelect } = useSelectStyles();
 
   useEffect(() => {
     if (productos.length === 0) {
@@ -204,8 +204,14 @@ const FormularioProductos = ({ cargando, unidadesDisponibles = [] }) => {
               className="border border-gray-200 rounded-lg p-5 bg-gray-50 mb-4"
             >
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="md:col-span-2 min-w-[320px]">
+                <div className="md:col-span-2 min-w-0">
                   <Select
+                    classNamePrefix="almacen-select"
+                    classNames={{
+                      control: ({ isFocused }) => `rounded-[10px]! bg-[#fafcff]! text-[14px]! ${isFocused ? '[box-shadow:0_0_0_3px_#9abcf21e]!' : ''}`,
+                      menu: () => 'rounded-[12px]! border border-solid border-[#dce5f2] [box-shadow:0_10px_35px_#1e3a8a1a]! overflow-hidden text-[14px]!',
+                      menuPortal: () => 'z-[100]!',
+                    }}
                     value={
                       productoSeleccionado
                         ? {
@@ -272,11 +278,7 @@ const FormularioProductos = ({ cargando, unidadesDisponibles = [] }) => {
                       handleProductoChange(indice, "cantidad", e.target.value)
                     }
                     disabled={cargando}
-                    className={`w-full border rounded-md px-4 py-3 text-base focus:outline-none focus:ring-1 focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed ${
-                      errores[`cantidad_${indice}`]
-                        ? "border-red-300"
-                        : "border-gray-300"
-                    }`}
+                    className={` w-full border rounded-md px-4 py-3 text-base focus:outline-none focus:ring-1 focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed  ${errores[`cantidad_${indice}`] ? "border-red-300" : "border-gray-300"}  `}
                     min="0"
                   />
                   {errores[`cantidad_${indice}`] && (
@@ -289,6 +291,12 @@ const FormularioProductos = ({ cargando, unidadesDisponibles = [] }) => {
                 <div className="flex gap-2">
                   <div className="flex-1">
                     <Select
+                      classNamePrefix="almacen-select"
+                    classNames={{
+                      control: ({ isFocused }) => `rounded-[10px]! bg-[#fafcff]! text-[14px]! ${isFocused ? '[box-shadow:0_0_0_3px_#9abcf21e]!' : ''}`,
+                      menu: () => 'rounded-[12px]! border border-solid border-[#dce5f2] [box-shadow:0_10px_35px_#1e3a8a1a]! overflow-hidden text-[14px]!',
+                      menuPortal: () => 'z-[100]!',
+                    }}
                       value={
                         producto.unidad
                           ? { value: producto.unidad, label: producto.unidad }

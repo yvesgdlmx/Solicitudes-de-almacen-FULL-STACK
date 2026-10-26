@@ -276,6 +276,49 @@ const UsuariosProvider = ({ children }) => {
         }
     }
 
+    const verPasswordUsuario = async (usuario) => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('No hay token de autenticaci\u00f3n');
+            }
+
+            const config = {
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                }
+            };
+
+            const { data } = await clienteAxios.get(`/usuarios/usuarios/${usuario.id}/password`, config);
+
+            await Swal.fire({
+                title: `Contrase\u00f1a de ${data.user}`,
+                text: data.password,
+                icon: 'info',
+                confirmButtonText: 'Cerrar',
+                confirmButtonColor: '#3B82F6'
+            });
+
+            return { success: true, password: data.password };
+        } catch (error) {
+            console.error('Error al obtener la contrase\u00f1a:', error);
+
+            await Swal.fire({
+                title: 'No se pudo mostrar la contrase\u00f1a',
+                text: error.response?.data?.msg || 'Ocurri\u00f3 un error al obtener la contrase\u00f1a',
+                icon: 'error',
+                confirmButtonText: 'Entendido',
+                confirmButtonColor: '#EF4444'
+            });
+
+            return {
+                success: false,
+                error: error.response?.data?.msg || 'Error al obtener la contrase\u00f1a'
+            };
+        }
+    }
+
     return (
         <UsuariosContext.Provider 
             value={{
@@ -285,6 +328,7 @@ const UsuariosProvider = ({ children }) => {
                 crearUsuario,
                 editarUsuario,
                 eliminarUsuario,
+                verPasswordUsuario,
                 setUsuarios
             }}
         >

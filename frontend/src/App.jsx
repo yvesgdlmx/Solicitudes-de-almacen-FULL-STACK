@@ -20,6 +20,7 @@ const TodasSolicitudes = lazy(() => import("./paginas/TodasSolicitudes"));
 const Dashboard = lazy(() => import("./paginas/Dashboard"));
 const CuentasDeUsuario = lazy(() => import("./paginas/CuentasDeUsuario"));
 const Productos = lazy(() => import("./paginas/Productos"));
+const CumplimientoSurtido = lazy(() => import("./paginas/CumplimientoSurtido"));
 
 function App() {
   return (
@@ -39,11 +40,12 @@ function App() {
                           </Route>
 
                           <Route element={<LayoutProtegido />}>
+                            <Route path="/cumplimiento-surtido" element={<RoleProtectedRoute allowedRoles={["superadmin"]}><CumplimientoSurtido /></RoleProtectedRoute>} />
                             <Route
                               path="/solicitudes"
                               element={
                                 <RoleProtectedRoute
-                                  allowedRoles={["admin", "superadmin", "user"]}
+                                  allowedRoles={["admin", "superadmin", "user", "desarrollo"]}
                                 >
                                   <MisSolicitudes />
                                 </RoleProtectedRoute>
@@ -53,7 +55,7 @@ function App() {
                               path="/todas-solicitudes"
                               element={
                                 <RoleProtectedRoute
-                                  allowedRoles={["admin", "superadmin"]}
+                                  allowedRoles={["admin", "superadmin", "desarrollo"]}
                                 >
                                   <TodasSolicitudes />
                                 </RoleProtectedRoute>
@@ -63,7 +65,7 @@ function App() {
                               path="/dashboard"
                               element={
                                 <RoleProtectedRoute
-                                  allowedRoles={["admin", "user", "superadmin"]}
+                                  allowedRoles={["admin", "user", "superadmin", "desarrollo"]}
                                 >
                                   <Dashboard />
                                 </RoleProtectedRoute>
@@ -73,7 +75,7 @@ function App() {
                               path="/cuentas-usuario"
                               element={
                                 <RoleProtectedRoute
-                                  allowedRoles={["superadmin"]}
+                                  allowedRoles={["superadmin", "desarrollo"]}
                                 >
                                   <CuentasDeUsuario />
                                 </RoleProtectedRoute>
@@ -83,7 +85,7 @@ function App() {
                               path="/productos"
                               element={
                                 <RoleProtectedRoute
-                                  allowedRoles={["superadmin"]}
+                                  allowedRoles={["superadmin", "desarrollo"]}
                                 >
                                   <Productos />
                                 </RoleProtectedRoute>

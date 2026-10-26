@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from "react";
-import Modal from "react-modal";
+import Modal from "./ModalBase";
 import { formatearTextoEstado, formatearFecha } from "../../functions/Index";
 import { FaTimes, FaFileAlt, FaUser, FaExclamationTriangle, FaList, FaComment, FaSave, FaCalendarAlt, FaClock, FaUserShield, FaFilePdf, FaBoxOpen, FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 import { PDFDownloadLink } from "@react-pdf/renderer";
@@ -8,6 +8,7 @@ import useSolicitud from "../../hooks/useSolicitud";
 import useSuministroParcial from "../../hooks/useSuministroParcial";
 import useUnidadMedida from "../../hooks/useUnidadMedida";
 import useAuth from "../../hooks/useAuth";
+import Swal from 'sweetalert2';
 
 const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) => {
   const [statusSeleccionado, setStatusSeleccionado] = useState('');
@@ -15,7 +16,7 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
   const [comentarioInicialAdmin, setComentarioInicialAdmin] = useState('');
   const [cambiandoStatus, setCambiandoStatus] = useState(false);
   const [suministrosParciales, setSuministrosParciales] = useState([]);
-  
+
   const { cambiarStatusSolicitud } = useSolicitud();
   const { registrarSuministrosParciales, obtenerSuministrosParciales, suministrosParciales: suministrosParcialesContext } = useSuministroParcial();
   const { unidades } = useUnidadMedida();
@@ -30,7 +31,7 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
       } else {
         setStatusSeleccionado('pendiente surtido');
       }
-      
+
       // Comentario admin
       const comentarioInicial = solicitud.comentarioAdmin || '';
       setComentarioAdmin(comentarioInicial);
@@ -79,17 +80,17 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
     { value: 'surtido', label: 'Surtido' },
   ];
 
-  const esAdmin = ['admin', 'superadmin'].includes(auth?.rol);
+  const esAdmin = ['admin', 'superadmin', 'desarrollo'].includes(auth?.rol);
 
   const hayCambiosPendientes = () => {
     if (!solicitud || !statusSeleccionado) return false;
-    
+
     const statusActualNormalizado = solicitud.status ? solicitud.status.trim().toLowerCase() : '';
     const statusSeleccionadoNormalizado = statusSeleccionado.trim().toLowerCase();
-    
+
     const comentarioActual = comentarioInicialAdmin;
     const comentarioNuevo = comentarioAdmin.trim();
-    
+
     return statusActualNormalizado !== statusSeleccionadoNormalizado || comentarioActual !== comentarioNuevo;
   };
 
@@ -144,7 +145,7 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
           const resultado = await registrarSuministrosParciales(solicitud.id, suministrosParaEnviar);
           if (!resultado.success) {
             setCambiandoStatus(false);
-            alert('Error al registrar la entrega parcial');
+            await Swal.fire({ icon: 'error', title: 'No se pudo registrar la entrega', text: resultado.error || 'Error al registrar la entrega parcial' });
             return;
           }
         }
@@ -152,14 +153,15 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
 
       const resultado = await cambiarStatusSolicitud(solicitud.id, statusSeleccionado, comentarioAdmin);
       setCambiandoStatus(false);
-      
+      if (!resultado.success) return;
+
       if (resultado.success) {
         solicitud.status = statusSeleccionado;
         solicitud.comentarioAdmin = comentarioAdmin.trim();
         setComentarioInicialAdmin(comentarioAdmin.trim());
       }
     }
-    
+
     onRequestClose();
   };
 
@@ -167,22 +169,22 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
     if (cambiandoStatus) {
       return {
         texto: 'Guardando...',
-        className: 'bg-blue-600 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 cursor-not-allowed opacity-75',
+        className: "[.am-dialog_&]:inline-flex [.am-dialog_&]:items-center [.am-dialog_&]:justify-center [.am-dialog_&]:gap-[7px] [.am-dialog_&]:min-h-10 [.am-dialog_&]:pt-[9px] [.am-dialog_&]:pr-[15px] [.am-dialog_&]:pb-[9px] [.am-dialog_&]:pl-[15px] [.am-dialog_&]:rounded-[10px] [.am-dialog_&]:text-[length:13px] [.am-dialog_&]:font-semibold [.am-dialog_&]:leading-[1.5] [.am-dialog_&]:no-underline max-[650.001px]:[.am-dialog_&]:[padding-inline:12px] [&&]:[background:#1859d5] text-white [&&]:[box-shadow:0_4px_12px_#1859d533] border border-solid [&&]:border-[#1859d5] [&&:hover:not(:disabled)]:[background:#1348b0] [&&:hover:not(:disabled)]:border-[#1348b0]",
         disabled: true
       };
     }
-    
+
     if (esAdmin && hayCambiosPendientes()) {
       return {
         texto: 'Guardar y Cerrar',
-        className: 'bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2',
+        className: "[.am-dialog_&]:inline-flex [.am-dialog_&]:items-center [.am-dialog_&]:justify-center [.am-dialog_&]:gap-[7px] [.am-dialog_&]:min-h-10 [.am-dialog_&]:pt-[9px] [.am-dialog_&]:pr-[15px] [.am-dialog_&]:pb-[9px] [.am-dialog_&]:pl-[15px] [.am-dialog_&]:rounded-[10px] [.am-dialog_&]:text-[length:13px] [.am-dialog_&]:font-semibold [.am-dialog_&]:leading-[1.5] [.am-dialog_&]:no-underline max-[650.001px]:[.am-dialog_&]:[padding-inline:12px] [&&]:[background:#1859d5] text-white [&&]:[box-shadow:0_4px_12px_#1859d533] border border-solid [&&]:border-[#1859d5] [&&:hover:not(:disabled)]:[background:#1348b0] [&&:hover:not(:disabled)]:border-[#1348b0]",
         disabled: false
       };
     }
-    
+
     return {
       texto: 'Cerrar',
-      className: 'bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-medium transition-colors',
+      className: "[.am-dialog_&]:inline-flex [.am-dialog_&]:items-center [.am-dialog_&]:justify-center [.am-dialog_&]:gap-[7px] [.am-dialog_&]:min-h-10 [.am-dialog_&]:pt-[9px] [.am-dialog_&]:pr-[15px] [.am-dialog_&]:pb-[9px] [.am-dialog_&]:pl-[15px] [.am-dialog_&]:rounded-[10px] [.am-dialog_&]:text-[length:13px] [.am-dialog_&]:font-semibold [.am-dialog_&]:leading-[1.5] [.am-dialog_&]:no-underline max-[650.001px]:[.am-dialog_&]:[padding-inline:12px] [&&]:[background:#edf3fc] [&&]:text-[#355886] border border-solid [&&]:border-[#bdcee8] [&:hover:not(:disabled)]:[background:#eef5ff] [&:hover:not(:disabled)]:border-[#bdd1ef]",
       disabled: false
     };
   };
@@ -220,18 +222,35 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
   };
 
   return (
-    <Modal
+    <Modal size="xl"
       isOpen={isOpen}
+      contentLabel={solicitud ? `Detalle de solicitud ${solicitud.folio}` : 'Detalle de solicitud'}
       onRequestClose={!cambiandoStatus ? handleCerrarModal : undefined}
-      className="w-[95vw] max-w-[900px] mx-auto mt-8 bg-white rounded-xl shadow-2xl outline-none max-h-[90vh] overflow-hidden"
-      overlayClassName="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center p-4 z-50"
-      ariaHideApp={false}
+      className="overflow-hidden [&_>_div]:max-h-[calc(100dvh_-_58px)] max-[650.001px]:[&_>_div]:max-h-[calc(100dvh_-_30px)]"
+
+
       shouldCloseOnOverlayClick={!cambiandoStatus}
       shouldCloseOnEsc={!cambiandoStatus}
     >
       <div className="flex flex-col h-full max-h-[90vh]">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 flex-shrink-0">
+        <div className="
+          flex items-center justify-between gap-[14px] pt-6 pr-6 pb-6 pl-6
+          [&&]:[background:linear-gradient(115deg,_#143363,_#245196)] [border-bottom-width:1px]
+          [border-bottom-style:solid] [&&]:[border-bottom-color:#315e9d] [&&]:text-[#e1eeff] max-[650.001px]:gap-[10px]
+          max-[650.001px]:pt-5 max-[650.001px]:pr-5 max-[650.001px]:pb-5 max-[650.001px]:pl-5 [&_>_div:only-child]:w-full
+          [&_h2]:text-[length:21px] [&_h2]:font-[650] [&_h2]:leading-[1.3] [&_h2]:tracking-[-.025em] [&&_h2]:text-white
+          max-[650.001px]:[&_h2]:text-[length:19px] [&_h3]:text-[length:18px] [&_h3]:font-[650] [&&_h3]:text-white
+          [&_p]:text-[length:13px] [&&_p]:text-[#d4e5fc] [&_p]:leading-[1.65] [&_p]:mt-[5px]
+          max-[650.001px]:[&_p]:text-[length:12px] [&&_[class*='bg-blue-100']]:[background:#ffffff1c]
+          [&&_[class*='bg-blue-100']]:text-[#bceeff] [&_[class*='bg-blue-100']]:rounded-[12px]
+          [&_[class*='bg-blue-100']]:pt-[11px] [&_[class*='bg-blue-100']]:pr-[11px] [&_[class*='bg-blue-100']]:pb-[11px]
+          [&_[class*='bg-blue-100']]:pl-[11px] [&&_[class*='bg-green-100']]:[background:#ffffff1c]
+          [&&_[class*='bg-green-100']]:text-[#bceeff] [&_[class*='bg-green-100']]:rounded-[12px]
+          [&_[class*='bg-green-100']]:pt-[11px] [&_[class*='bg-green-100']]:pr-[11px]
+          [&_[class*='bg-green-100']]:pb-[11px] [&_[class*='bg-green-100']]:pl-[11px] [&&_.text-green-600]:text-[#bceeff]
+          [&&_.text-blue-600]:text-[#bceeff]
+        ">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
               <FaFileAlt className="text-2xl" />
@@ -247,7 +266,12 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
             <button
               onClick={handleCerrarModal}
               disabled={cambiandoStatus}
-              className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="
+                flex items-center justify-center self-start shrink-0 w-8 h-8 [&&]:[background:#ffffff15] [&&]:text-white
+                pt-[6px] pr-[6px] pb-[6px] pl-[6px] rounded-[10px] ml-auto border border-solid [&&]:border-[#bdd7ff55]
+                [&&:hover]:[background:#ffffff2b] [&&:hover]:text-white [&&:hover]:border-[#d0e4ff99] [&_>_svg]:w-[17px]
+                [&_>_svg]:h-[17px] [&_>_svg]:text-inherit
+              " aria-label="Cerrar detalle de solicitud"
             >
               <FaTimes className="text-lg" />
             </button>
@@ -294,7 +318,7 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
                     <FaExclamationTriangle className="text-blue-600" />
                     <span className="font-medium text-gray-700">Prioridad</span>
                   </div>
-                  <span className={`inline-block px-3 py-1 text-sm font-semibold rounded-full border ${getPrioridadColor(solicitud.prioridad)}`}>
+                  <span className={` inline-block px-3 py-1 text-sm font-semibold rounded-full border  ${getPrioridadColor(solicitud.prioridad)}  `}>
                     {solicitud.prioridad?.charAt(0).toUpperCase() + solicitud.prioridad?.slice(1)}
                   </span>
                 </div>
@@ -306,9 +330,10 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
                   <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
                   Estado de la Solicitud
                 </h3>
-                
+
                 {esAdmin ? (
                   <div className="space-y-3">
+                    {auth?.rol === 'desarrollo' && <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">Desarrollo: puedes registrar entregas completas y parciales fuera de horario. La excepción se guardará en el historial con la hora real.</p>}
                     <select
                       value={statusSeleccionado}
                       onChange={(e) => setStatusSeleccionado(e.target.value)}
@@ -331,13 +356,9 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
                         </h4>
                         <div className="space-y-3">
                           {suministrosParciales.map((suministro, index) => (
-                            <div 
-                              key={index} 
-                              className={`bg-white p-4 rounded-lg border-2 transition-all ${
-                                suministro.seleccionado 
-                                  ? 'border-yellow-400 bg-yellow-50' 
-                                  : 'border-gray-200'
-                              }`}
+                            <div
+                              key={index}
+                              className={` bg-white p-4 rounded-lg border-2 transition-all  ${suministro.seleccionado ? "border-yellow-400 bg-yellow-50" : "border-gray-200"}  `}
                             >
                               {/* Checkbox y nombre del producto */}
                               <div className="flex items-start gap-3 mb-3">
@@ -355,7 +376,7 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
                                   </span>
                                 </div>
                               </div>
-                              
+
                               {/* Inputs solo si está seleccionado */}
                               {suministro.seleccionado && (
                                 <div className="grid grid-cols-2 gap-3 pl-8">
@@ -438,7 +459,7 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
                     )}
                   </div>
                 ) : (
-                  <span className={`inline-block px-4 py-2 text-sm font-semibold rounded-full border ${getStatusColor(solicitud.status)}`}>
+                  <span className={` inline-block px-4 py-2 text-sm font-semibold rounded-full border  ${getStatusColor(solicitud.status)}  `}>
                     {formatearTextoEstado(solicitud.status)}
                   </span>
                 )}
@@ -479,7 +500,7 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
                     {solicitud.suministros?.length || 0} productos
                   </span>
                 </h3>
-                
+
                 {solicitud.suministros && solicitud.suministros.length > 0 ? (
                   <div className="space-y-3">
                     {solicitud.suministros.map((suministro, index) => {
@@ -525,29 +546,29 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
                                 const etiqueta = fueEntregado ? 'Entregado' : 'No entregado';
 
                                 return (
-                                  <div key={idx} className={`flex items-center justify-between p-3 px-4 ${colorClase} ${idx > 0 ? 'border-t' : ''}`}>
+                                  <div key={idx} className={` flex items-center justify-between p-3 px-4  ${colorClase}   ${idx > 0 ? "border-t" : ""}  `}>
                                     <div className="flex items-center gap-2 flex-1">
                                       {fueEntregado ? (
-                                        <FaCheckCircle className={`${iconoColor} text-sm`} />
+                                        <FaCheckCircle className={`  ${iconoColor}  text-sm `} />
                                       ) : (
-                                        <FaTimesCircle className={`${iconoColor} text-sm`} />
+                                        <FaTimesCircle className={`  ${iconoColor}  text-sm `} />
                                       )}
                                       <div>
-                                        <span className={`text-sm font-medium ${textoColor}`}>
+                                        <span className={` text-sm font-medium  ${textoColor}  `}>
                                           {fueEntregado ? `Entrega Parcial #${idx + 1}` : 'Sin entrega'}
                                         </span>
                                       </div>
                                     </div>
                                     <div className="flex items-center gap-4 text-sm">
                                       <div className="text-center">
-                                        <span className={`block ${textoColor} text-xs mb-1`}>{etiqueta}</span>
-                                        <span className={`${textoColor} px-3 py-1 rounded-full font-semibold ${badgeColor}`}>
+                                        <span className={` block  ${textoColor}  text-xs mb-1 `}>{etiqueta}</span>
+                                        <span className={`  ${textoColor}  px-3 py-1 rounded-full font-semibold  ${badgeColor}  `}>
                                           {parcial.cantidad}
                                         </span>
                                       </div>
                                       <div className="text-center">
-                                        <span className={`block ${textoColor} text-xs mb-1`}>Unidad</span>
-                                        <span className={`${textoColor} px-3 py-1 rounded-full font-medium ${badgeColor}`}>
+                                        <span className={` block  ${textoColor}  text-xs mb-1 `}>Unidad</span>
+                                        <span className={`  ${textoColor}  px-3 py-1 rounded-full font-medium  ${badgeColor}  `}>
                                           {parcial.unidad}
                                         </span>
                                       </div>
@@ -577,8 +598,12 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
         </div>
 
         {/* Footer */}
-        <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex-shrink-0">
-          <div className="flex justify-between items-center">
+        <div className="
+          pt-[18px] pr-6 pb-[18px] pl-6 [&&]:[background:#edf3fc] [border-top-width:1px] [border-top-style:solid]
+          shrink-0 [&&]:border-[#cddbef] max-[650.001px]:pt-4 max-[650.001px]:pr-5 max-[650.001px]:pb-4
+          max-[650.001px]:pl-5
+        ">
+          <div className="flex flex-wrap items-center justify-between gap-3 max-[650.001px]:gap-[10px] max-[650.001px]:[&_>_a]:flex-1">
             {/* Botón PDF */}
             {solicitud && (
               <PDFDownloadLink
@@ -586,8 +611,16 @@ const ModalDetalleSolicitud = ({ isOpen, onRequestClose, solicitud, cargando }) 
                 fileName={`solicitud_${solicitud?.folio || "sin_folio"}.pdf`}
               >
                 {({ loading }) => (
-                  <button 
-                    className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
+                  <button
+                    className="
+                      [.am-dialog_&]:inline-flex [.am-dialog_&]:items-center [.am-dialog_&]:justify-center [.am-dialog_&]:gap-[7px]
+                      [.am-dialog_&]:min-h-10 [.am-dialog_&]:pt-[9px] [.am-dialog_&]:pr-[15px] [.am-dialog_&]:pb-[9px]
+                      [.am-dialog_&]:pl-[15px] [.am-dialog_&]:rounded-[10px] [.am-dialog_&]:text-[length:13px]
+                      [.am-dialog_&]:font-semibold [.am-dialog_&]:leading-[1.5] [.am-dialog_&]:no-underline
+                      max-[650.001px]:[.am-dialog_&]:[padding-inline:12px] [&&]:[background:#edf3fc] [&&]:text-[#355886] border
+                      border-solid [&&]:border-[#bdcee8] [&:hover:not(:disabled)]:[background:#eef5ff]
+                      [&:hover:not(:disabled)]:border-[#bdd1ef]
+                    "
                     disabled={loading}
                   >
                     <FaFilePdf />

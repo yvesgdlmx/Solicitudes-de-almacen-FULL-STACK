@@ -34,7 +34,7 @@ const MetricasCards = ({ metricas }) => {
       {cards.map((card, index) => (
         <div
           key={index}
-          className={`${card.color} border rounded-lg p-6 transition-transform hover:scale-105 shadow-sm`}
+          className={`  ${card.color}  border rounded-lg p-6 transition-transform hover:scale-105 shadow-sm `}
         >
           <div className="flex items-center justify-between">
             <div>

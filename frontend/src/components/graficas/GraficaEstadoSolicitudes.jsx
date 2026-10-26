@@ -6,8 +6,8 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 
 const GraficaEstadoSolicitudes = ({ estadoSolicitudes }) => {
   const colores = {
-    'pendiente autorizacion': '#3B82F6',
-    'autorizada': '#8B5CF6',
+    'pendiente surtido': '#3B82F6',
+    'en proceso': '#1E3A8A',
     'rechazada': '#EF4444',
     'entrega parcial': '#F59E0B',
     'surtido': '#10B981'
@@ -67,8 +67,8 @@ const GraficaEstadoSolicitudes = ({ estadoSolicitudes }) => {
 
   if (estadoSolicitudes.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-600 mb-4">
+      <div className="bg-white rounded-2xl shadow-sm border border-[#E2E8F0] p-5">
+        <h3 className="text-lg font-semibold text-[#0F172A] mb-4">
           Estado de Solicitudes
         </h3>
         <div className="h-64 flex items-center justify-center">
@@ -79,8 +79,11 @@ const GraficaEstadoSolicitudes = ({ estadoSolicitudes }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h3 className="text-lg font-semibold text-gray-600 mb-4">
+    <div className="bg-white rounded-2xl shadow-sm border border-[#E2E8F0] p-5">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#3B82F6]">
+        Distribucion
+      </p>
+      <h3 className="text-lg font-semibold text-[#0F172A] mb-4">
         Estado de Solicitudes
       </h3>
       <div className="h-64">

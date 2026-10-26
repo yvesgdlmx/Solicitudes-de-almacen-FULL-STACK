@@ -33,7 +33,7 @@ export const obtenerProducto = async (req, res) => {
 export const crearProducto = async (req, res) => {
     try {
         const usuario = req.usuario;
-        if (!['superadmin'].includes(usuario?.rol)) {
+        if (!['superadmin', 'desarrollo'].includes(usuario?.rol)) {
             return res.status(403).json({ msg: 'No tienes permisos para crear productos' });
         }
 
@@ -76,7 +76,7 @@ export const crearProducto = async (req, res) => {
 export const actualizarProducto = async (req, res) => {
     try {
         const usuario = req.usuario;
-        if (!['superadmin'].includes(usuario?.rol)) {
+        if (!['superadmin', 'desarrollo'].includes(usuario?.rol)) {
             return res.status(403).json({ msg: 'No tienes permisos para actualizar productos' });
         }
 
@@ -126,7 +126,7 @@ export const actualizarProducto = async (req, res) => {
 export const eliminarProducto = async (req, res) => {
     try {
         const usuario = req.usuario;
-        if (!['superadmin'].includes(usuario?.rol)) {
+        if (!['superadmin', 'desarrollo'].includes(usuario?.rol)) {
             return res.status(403).json({ msg: 'No tienes permisos para eliminar productos' });
         }
 

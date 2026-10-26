@@ -30,7 +30,7 @@ export const obtenerUnidadMedida = async (req, res) => {
 export const crearUnidadMedida = async (req, res) => {
     try {
         const usuario = req.usuario;
-        if (!['superadmin'].includes(usuario?.rol)) {
+        if (!['superadmin', 'desarrollo'].includes(usuario?.rol)) {
             return res.status(403).json({ msg: "No tienes permisos para realizar esta acción" });
         }
 
@@ -65,7 +65,7 @@ export const crearUnidadMedida = async (req, res) => {
 export const actualizarUnidadMedida = async (req, res) => {
     try {
         const usuario = req.usuario;
-        if (!['superadmin'].includes(usuario?.rol)) {
+        if (!['superadmin', 'desarrollo'].includes(usuario?.rol)) {
             return res.status(403).json({ msg: "No tienes permisos para realizar esta acción" });
         }
 
@@ -109,7 +109,7 @@ export const actualizarUnidadMedida = async (req, res) => {
 export const eliminarUnidadMedida = async (req, res) => {
     try {
         const usuario = req.usuario;
-        if (!['superadmin'].includes(usuario?.rol)) {
+        if (!['superadmin', 'desarrollo'].includes(usuario?.rol)) {
             return res.status(403).json({ msg: "No tienes permisos para realizar esta acción" });
         }
         const { id } = req.params;

@@ -92,8 +92,8 @@ const GraficaSolicitudesPorMes = ({ solicitudesPorMes }) => {
 
   if (solicitudesPorMes.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
+      <div className="bg-white rounded-2xl shadow-sm border border-[#E2E8F0] p-5">
+        <h3 className="text-lg font-semibold text-[#0F172A] mb-4">
           Solicitudes por Mes
         </h3>
         <div className="h-64 flex items-center justify-center">
@@ -104,8 +104,11 @@ const GraficaSolicitudesPorMes = ({ solicitudesPorMes }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h3 className="text-lg font-semibold text-gray-800 mb-4">
+    <div className="bg-white rounded-2xl shadow-sm border border-[#E2E8F0] p-5">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#3B82F6]">
+        Tendencia
+      </p>
+      <h3 className="text-lg font-semibold text-[#0F172A] mb-4">
         Solicitudes por Mes
       </h3>
       <div className="h-64">

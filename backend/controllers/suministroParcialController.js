@@ -1,11 +1,12 @@
-import { Solicitud, SuministroParcial, Usuario, Suministro } from '../models/Index.js';
+import { Solicitud, SuministroParcial, Usuario, Suministro, SeguimientoSurtido, EventoSurtido } from '../models/Index.js';
 import db from '../config/db.js';
+import { registrarCambio, errorOperacion, esTerminal } from '../services/seguimientoSurtido.js';
 
 export const crearSuministroParcial = async (req, res) => {
-    const t = await db.transaction();
+    let t;
     try {
         const usuario = req.usuario;
-        if (!['admin', 'superadmin'].includes(usuario?.rol)) {
+        if (!['admin', 'superadmin', 'desarrollo'].includes(usuario?.rol)) {
             return res.status(403).json({ msg: 'No tienes permisos para registrar entregas parciales' });
         }
 
@@ -24,10 +25,17 @@ export const crearSuministroParcial = async (req, res) => {
             return res.status(400).json({ msg: 'Suministros parciales inválidos' });
         }
 
-        const solicitud = await Solicitud.findByPk(solicitudId);
-        if (!solicitud) {
-            return res.status(404).json({ msg: 'Solicitud no encontrada' });
+        if (!suministrosParciales.length || suministrosParciales.some(item => !Number.isFinite(Number(item.cantidad)) || Number(item.cantidad) < 0 || !item.nombre || !item.unidad)) {
+            return res.status(400).json({ msg: 'Incluye productos con cantidades válidas y no negativas' });
         }
+
+        t = await db.transaction();
+        const solicitud = await Solicitud.findByPk(solicitudId, { transaction: t, lock: t.LOCK.UPDATE });
+        if (!solicitud) {
+            throw errorOperacion('Solicitud no encontrada', 404);
+        }
+        if (esTerminal(solicitud.status)) throw errorOperacion('No se pueden agregar entregas a una solicitud cerrada');
+        await registrarCambio(solicitud, 'entrega parcial', usuario, t, { entregas: suministrosParciales });
 
         // Crear los suministros parciales (ahora permite cantidad 0)
         for (const item of suministrosParciales) {
@@ -61,9 +69,9 @@ export const crearSuministroParcial = async (req, res) => {
             solicitud: solicitudActualizada
         });
     } catch (error) {
-        await t.rollback();
+        if (t && !t.finished) await t.rollback();
         console.error(error);
-        res.status(500).json({ msg: 'Error en el servidor al registrar la entrega parcial' });
+        res.status(error.status || 500).json({ msg: error.status ? error.message : 'Error en el servidor al registrar la entrega parcial' });
     }
 };
 
@@ -86,7 +94,7 @@ export const obtenerSuministrosParciales = async (req, res) => {
 export const eliminarSuministroParcial = async (req, res) => {
     try {
         const usuario = req.usuario;
-        if (!['admin', 'superadmin'].includes(usuario?.rol)) {
+        if (!['admin', 'superadmin', 'desarrollo'].includes(usuario?.rol)) {
             return res.status(403).json({ msg: 'No tienes permisos para eliminar entregas parciales' });
         }
 
@@ -97,11 +105,20 @@ export const eliminarSuministroParcial = async (req, res) => {
             return res.status(404).json({ msg: 'Suministro parcial no encontrado' });
         }
 
-        await suministroParcial.destroy();
+        await db.transaction(async transaction => {
+            const solicitud = await Solicitud.findByPk(suministroParcial.SolicitudId, { transaction, lock: transaction.LOCK.UPDATE });
+            if (!solicitud || esTerminal(solicitud.status)) throw errorOperacion('No se pueden eliminar entregas de una solicitud cerrada');
+            const seguimiento = await SeguimientoSurtido.findByPk(solicitud.id, { transaction });
+            await EventoSurtido.create({
+                SolicitudId: solicitud.id, actorId: usuario.id, responsableId: seguimiento?.responsableId,
+                tipo: 'eliminación de entrega parcial', datos: { entregas: [{ nombre: suministroParcial.nombre, cantidad: suministroParcial.cantidad, unidad: suministroParcial.unidad }] },
+            }, { transaction });
+            await suministroParcial.destroy({ transaction });
+        });
 
         return res.json({ msg: 'Suministro parcial eliminado correctamente' });
     } catch (error) {
         console.error('Error al eliminar suministro parcial:', error);
-        res.status(500).json({ msg: 'Error en el servidor al eliminar el suministro parcial' });
+        res.status(error.status || 500).json({ msg: error.status ? error.message : 'Error en el servidor al eliminar el suministro parcial' });
     }
 };
